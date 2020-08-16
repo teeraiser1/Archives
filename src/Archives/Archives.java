@@ -2,12 +2,10 @@ package Archives;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.audio.AudioSendHandler;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.managers.AudioManager;
 import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
@@ -17,17 +15,13 @@ import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 /* This project is based on JDA example "MessageListenerExample.java" */
@@ -77,6 +71,7 @@ public class Archives extends ListenerAdapter
             e.printStackTrace();
         }
         
+        InitDir();
         ReadMemeData();
     }
 
@@ -271,9 +266,9 @@ public class Archives extends ListenerAdapter
         	}
         }
         else if (msg.matches(".*소라고동님.*")) {
-        	channel.sendFile(new File(PrivateData.MEME_PATH + "soragodong_qst.jpeg"))
+        	channel.sendFile(new File(Constants.Files.MEME_PATH + "soragodong_qst.jpeg"))
         			.queue();
-        	channel.sendFile(new File(PrivateData.MEME_PATH + "soragodong_ans.jpeg"))
+        	channel.sendFile(new File(Constants.Files.MEME_PATH + "soragodong_ans.jpeg"))
         			.queue();
 
         	Random rand = ThreadLocalRandom.current();
@@ -298,10 +293,7 @@ public class Archives extends ListenerAdapter
 	        else if (comment.equals("!재생"))
 	        	commandType = MUSIC_PLAY;
     		
-        	if (commandType == MUSIC_PLAY) {
-        		onEchoCommand(event, attachment);
-        	}
-        	else if (commandType == MEME_ADD || commandType == MEME_MODIFY){
+        	if (commandType == MEME_ADD || commandType == MEME_MODIFY){
             	boolean isExtentionValid = false;
         		boolean isCommandExist = false;
         		
@@ -310,7 +302,7 @@ public class Archives extends ListenerAdapter
 	        			isExtentionValid = true;
 			        	if (commandType == MEME_ADD) {
 			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = PrivateData.MEME_PATH + attachment.getFileName();
+			        		String fileName = Constants.Files.MEME_PATH + attachment.getFileName();
 			            	isCommandExist = false;
 			            	
 			        		for (MemeCmd cmd : Memecmds) {
@@ -334,7 +326,7 @@ public class Archives extends ListenerAdapter
 			        	}
 			        	else if (commandType == MEME_MODIFY) {
 			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = PrivateData.MEME_PATH + attachment.getFileName();
+			        		String fileName = Constants.Files.MEME_PATH + attachment.getFileName();
 			            	
 			            	for (MemeCmd cmd : Memecmds) {
 			            		if (cmd.getCommand().equals(command)) {
@@ -385,9 +377,10 @@ public class Archives extends ListenerAdapter
 						.append("\n")
 						.append("짤 수정 : 짤 이름에 해당하는 이미지를 수정하고 싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!수정 <짤 이름>' 입력 후 올리기\n")
 						.queue();
+        	System.out.println(Constants.Files.ROOT_PATH);
         }
         else if (msg.equals("!바이바이")) {
-        	File targetFile = new File(PrivateData.MEME_PATH + "terminated.gif");
+        	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
         	channel.sendFile(targetFile).queue();
         	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
         	try {
@@ -401,7 +394,7 @@ public class Archives extends ListenerAdapter
         else {
         	for (MemeCmd cmd : Memecmds) {
         		if (cmd.getCommand().equals(msg)) {
-        			File targetFile = new File(cmd.getFileName());
+        			File targetFile = new File(Constants.Files.MEME_PATH + cmd.getFileName());
         			if (targetFile.exists()) {
 	                	channel.purgeMessagesById(channel.getLatestMessageId());
 	                	channel.sendFile(targetFile)
@@ -445,9 +438,32 @@ public class Archives extends ListenerAdapter
     	else
     		return null;
     }
+
+    private static void InitDir() {
+		File meme_path = new File(Constants.Files.MEME_PATH);
+        if (!meme_path.exists()) {
+        	meme_path.mkdir();
+        }
+        
+		File data_path = new File(Constants.Files.DATA_PATH);
+        if (!data_path.exists()) {
+        	data_path.mkdir();
+        }
+    }
+            
     private static void ReadMemeData() {
     	try {
-    		File meme_DataFile = new File(PrivateData.MEME_DATAFILE);
+    		File meme_path = new File(Constants.Files.MEME_PATH);
+            if (!meme_path.exists()) {
+            	meme_path.mkdir();
+            }
+            
+    		File data_path = new File(Constants.Files.DATA_PATH);
+            if (!data_path.exists()) {
+            	data_path.mkdir();
+            }
+            
+    		File meme_DataFile = new File(Constants.Files.MEME_DATAFILE);
             if (!meme_DataFile.exists()) {
             	meme_DataFile.createNewFile();
             }
@@ -471,7 +487,7 @@ public class Archives extends ListenerAdapter
     }
     private static void AddMemeData(String command, String fileName) {
     	try {
-        	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(PrivateData.MEME_DATAFILE), true));
+        	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(Constants.Files.MEME_DATAFILE), true));
         	bufferedWriter.write(MakeMemeCmdLine(command, fileName));
         	bufferedWriter.flush();
         	bufferedWriter.close();
@@ -485,8 +501,8 @@ public class Archives extends ListenerAdapter
     }
     private static void ModifyMemeData(String command, String fileName) {
     	try {
-        	File originFile = new File(PrivateData.MEME_DATAFILE);
-    		File tmpFile = File.createTempFile("meme", "", new File(PrivateData.DATA_PATH));
+        	File originFile = new File(Constants.Files.MEME_DATAFILE);
+    		File tmpFile = File.createTempFile("meme", "", new File(Constants.Files.DATA_PATH));
     		
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(originFile));
         	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -506,7 +522,7 @@ public class Archives extends ListenerAdapter
         	bufferedWriter.close();
         	
         	originFile.delete();
-        	tmpFile.renameTo(new File(PrivateData.DATA_PATH + "meme.txt"));
+        	tmpFile.renameTo(new File(Constants.Files.DATA_PATH + "meme.txt"));
     	}
     	catch(FileNotFoundException e) {
     		System.out.println("FileNotFoundException occur : " + e.toString());
@@ -517,8 +533,8 @@ public class Archives extends ListenerAdapter
     }
     private static void RemoveMemeData(String command) {
     	try {
-        	File originFile = new File(PrivateData.MEME_DATAFILE);
-    		File tmpFile = File.createTempFile("meme", "", new File(PrivateData.DATA_PATH));
+        	File originFile = new File(Constants.Files.MEME_DATAFILE);
+    		File tmpFile = File.createTempFile("meme", "", new File(Constants.Files.DATA_PATH));
     		
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(originFile));
         	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -533,7 +549,7 @@ public class Archives extends ListenerAdapter
         	bufferedWriter.close();
         	
         	originFile.delete();
-        	tmpFile.renameTo(new File(PrivateData.DATA_PATH + "meme.txt"));
+        	tmpFile.renameTo(new File(Constants.Files.DATA_PATH + "meme.txt"));
     	}
     	catch(FileNotFoundException e) {
     		System.out.println("FileNotFoundException occur : " + e.toString());
@@ -551,137 +567,6 @@ public class Archives extends ListenerAdapter
     	return buffer;
     }
 
-
-    
-    private void onEchoCommand(MessageReceivedEvent event, Attachment music)
-    {
-        // Note: None of these can be null due to our configuration with the JDABuilder!
-        Member member = event.getMember();                              // Member is the context of the user for the specific guild, containing voice state and roles
-        GuildVoiceState voiceState = member.getVoiceState();            // Check the current voice state of the user
-        VoiceChannel voiceChannel = voiceState.getChannel();                 // Use the channel the user is currently connected to
-        if (voiceChannel != null)
-        {
-            connectTo(voiceChannel, music);                                         // Join the channel of the user
-            onConnecting(voiceChannel, event.getChannel());                  // Tell the user about our success
-        }
-        else
-        {
-            onUnknownChannel(event.getChannel(), "your voice channel"); // Tell the user about our failure
-        }
-    }
-
-    private void onConnecting(VoiceChannel channel, MessageChannel messageChannel)
-    {
-        messageChannel.sendMessage("Connecting to " + channel.getName()).queue(); // never forget to queue()!
-    }
-
-
-    private void onUnknownChannel(MessageChannel voiceChannel, String comment)
-    {
-    	voiceChannel.sendMessage("Unable to connect to ``" + comment + "``, no such channel!").queue(); // never forget to queue()!
-    }
-
-
-    private void connectTo(VoiceChannel voiceChannel, Attachment music)
-    {
-        Guild guild = voiceChannel.getGuild();
-        // Get an audio manager for this guild, this will be created upon first use for each guild
-        AudioManager audioManager = guild.getAudioManager();
-        // Create our Send/Receive handler for the audio connection
-        MusicHandler handler = new MusicHandler();
-        // The order of the following instructions does not matter!
-
-        // Set the sending handler to our echo system
-        audioManager.setSendingHandler(handler);
-        // Connect to the voice channel
-        audioManager.openAudioConnection(voiceChannel);
-        handler.pushMusic(music);
-    }
-
-    public static class MusicHandler implements AudioSendHandler
-    {
-        /*
-            All methods in this class are called by JDA threads when resources are available/ready for processing.
-
-            The receiver will be provided with the latest 20ms of PCM stereo audio
-            Note you can receive even while setting yourself to deafened!
-
-            The sender will provide 20ms of PCM stereo audio (pass-through) once requested by JDA
-            When audio is provided JDA will automatically set the bot to speaking!
-         */
-        private final Queue<byte[]> queue = new ConcurrentLinkedQueue<>();
-        /* Send Handling */
-
-        @Override
-        public boolean canProvide()
-        {
-            // If we have something in our buffer we can provide it to the send system
-            return !queue.isEmpty();
-        }
-
-        @Override
-        public ByteBuffer provide20MsAudio()
-        {
-            // use what we have in our buffer to send audio as PCM
-            byte[] data = queue.poll();
-            return data == null ? null : ByteBuffer.wrap(data); // Wrap this in a java.nio.ByteBuffer
-        }
-
-        @Override
-        public boolean isOpus()
-        {
-            // since we send audio that is received from discord we don't have opus but PCM
-            return false;
-        }
-        
-        public void pushMusic(Attachment music) {
-        	String path = "C://Users//teera//Desktop//abc.mp3";
-        	File file = new File(path);
-        	byte[] data = new byte[(int) file.length()];
-        	FileInputStream fis = null;
-	        try {
-				fis = new FileInputStream(file);
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.out.println("QWER");
-			}
-			try {
-				fis.read(data);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.out.println("QWER");
-			}   
-        	queue.add(data);
-	    }
-    }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+      
     
 }
