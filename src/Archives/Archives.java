@@ -302,7 +302,7 @@ public class Archives extends ListenerAdapter
 	        			isExtentionValid = true;
 			        	if (commandType == MEME_ADD) {
 			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = Constants.Files.MEME_PATH + attachment.getFileName();
+			        		String fileName = attachment.getFileName();
 			            	isCommandExist = false;
 			            	
 			        		for (MemeCmd cmd : Memecmds) {
@@ -314,7 +314,7 @@ public class Archives extends ListenerAdapter
 			        		if (!isCommandExist) {
 				        		Memecmds.add(new MemeCmd(command, fileName));
 				        		AddMemeData(command, fileName);
-				            	attachment.downloadToFile(fileName)
+				            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
 								.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
 			        			channel.sendMessage("성공적으로 이미지가 등록되었습니다")
 	        							.queue();
@@ -326,12 +326,12 @@ public class Archives extends ListenerAdapter
 			        	}
 			        	else if (commandType == MEME_MODIFY) {
 			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = Constants.Files.MEME_PATH + attachment.getFileName();
+			        		String fileName = attachment.getFileName();
 			            	
 			            	for (MemeCmd cmd : Memecmds) {
 			            		if (cmd.getCommand().equals(command)) {
-			            			if (new File(cmd.getFileName()).delete()) {
-			    		            	attachment.downloadToFile(fileName)
+			            			if (new File(Constants.Files.MEME_PATH + cmd.getFileName()).delete()) {
+			    		            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
 			    						.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
 			            				
 			    		        		Memecmds.add(new MemeCmd(command, fileName));
@@ -522,7 +522,7 @@ public class Archives extends ListenerAdapter
         	bufferedWriter.close();
         	
         	originFile.delete();
-        	tmpFile.renameTo(new File(Constants.Files.DATA_PATH + "meme.txt"));
+        	tmpFile.renameTo(new File(Constants.Files.MEME_DATAFILE));
     	}
     	catch(FileNotFoundException e) {
     		System.out.println("FileNotFoundException occur : " + e.toString());
