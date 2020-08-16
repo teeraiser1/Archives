@@ -1,6 +1,7 @@
 package Archives;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message.Attachment;
@@ -386,6 +387,15 @@ public class Archives extends ListenerAdapter
 						.queue();
         }
         else if (msg.equals("!바이바이")) {
+        	File targetFile = new File(PrivateData.MEME_PATH + "terminated.gif");
+        	channel.sendFile(targetFile).queue();
+        	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
+        	try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         	System.exit(0);
         }
         else {
