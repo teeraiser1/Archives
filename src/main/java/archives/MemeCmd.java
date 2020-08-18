@@ -1,4 +1,4 @@
-package Archives;
+package main.java.archives;
 
 public class MemeCmd {
 		private String command;

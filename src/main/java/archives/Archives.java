@@ -1,4 +1,4 @@
-package Archives;
+package main.java.archives;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -32,7 +32,6 @@ public class Archives extends ListenerAdapter
 	private Vector<String> participants = new Vector<String>();
 	private static Vector<MemeCmd> Memecmds = new Vector<MemeCmd>();
 	
-	private static String[] Extensions = {"jpg", "jpeg", "png", "gif"};
 	
 	private static int MEME_ADD = 0;
 	private static int MEME_MODIFY = 1;
@@ -297,7 +296,7 @@ public class Archives extends ListenerAdapter
             	boolean isExtentionValid = false;
         		boolean isCommandExist = false;
         		
-	        	for (String extention : Extensions)
+	        	for (String extention : Constants.Extensions.IMG)
 	        		if (extention.equals(attachment.getFileExtension())) {
 	        			isExtentionValid = true;
 			        	if (commandType == MEME_ADD) {
@@ -350,7 +349,7 @@ public class Archives extends ListenerAdapter
 			        	break;
 	        		}
 	        	if (!isExtentionValid)
-	        		channel.sendMessage("해당 확장자는 유효하지 않습니다.\n유효한 확장자 : " + ArgstoLine(Extensions, ","))
+	        		channel.sendMessage("해당 확장자는 유효하지 않습니다.\n유효한 확장자 : " + ArgstoLine(Constants.Extensions.IMG, ","))
 	        				.queue();
         	}
         }
@@ -376,8 +375,14 @@ public class Archives extends ListenerAdapter
 						.append("짤 등록 : 짤을 추가하고싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!추가 <짤 이름>' 입력 후 올리기\n")
 						.append("\n")
 						.append("짤 수정 : 짤 이름에 해당하는 이미지를 수정하고 싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!수정 <짤 이름>' 입력 후 올리기\n")
+						.append("\n")
+						.append("음악 추가(유튜브) : !/add 링크\n")
+						.append("음악 바로 재생 : !/now 링크 \n")
+						.append("음악 일시정지 : !/pause\n")
+						.append("음악 재생 : !/resume\n")
+						.append("음악 볼륨 : !/volume 숫자\n")
+						.append("음악 스킵 : !/skip \n")
 						.queue();
-        	System.out.println(Constants.Files.ROOT_PATH);
         }
         else if (msg.equals("!바이바이")) {
         	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
