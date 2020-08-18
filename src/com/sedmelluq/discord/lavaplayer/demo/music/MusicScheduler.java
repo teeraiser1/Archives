@@ -6,6 +6,9 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
+import main.java.archives.Constants;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
@@ -60,18 +63,24 @@ public class MusicScheduler extends AudioEventAdapter implements Runnable {
   }
 
   private void startNextTrack(boolean noInterrupt) {
-    AudioTrack next = queue.pollFirst();
+	    AudioTrack next = queue.pollFirst();
 
-    if (next != null) {
-      if (!player.startTrack(next, noInterrupt)) {
-        queue.addFirst(next);
-      }
-    } else {
-      player.stopTrack();
+	    if (next != null) {
+	      if (!player.startTrack(next, noInterrupt)) {
+	        queue.addFirst(next);
+	      }
+	    } else {
+	      player.stopTrack();
+	      File musicPath = new File(Constants.Files.MUSIC_PATH);
+	      if (musicPath.isDirectory()) {
+	      File[] fileList = musicPath.listFiles();
+		      for (File targetFile : fileList)
+		    	  targetFile.delete();
+	      }
 
-      messageDispatcher.sendMessage("Queue finished.");
-    }
-  }
+	      messageDispatcher.sendMessage("Queue finished.");
+	    }
+	  }
 
   @Override
   public void onTrackStart(AudioPlayer player, AudioTrack track) {

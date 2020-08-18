@@ -1,4 +1,4 @@
-package main.java.archives;
+package com.sedmelluq.discord.lavaplayer.demo.music;
 
 import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 import com.sedmelluq.discord.lavaplayer.demo.BotGuildContext;
@@ -6,8 +6,6 @@ import com.sedmelluq.discord.lavaplayer.demo.MessageDispatcher;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotCommandHandler;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotController;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotControllerFactory;
-import com.sedmelluq.discord.lavaplayer.demo.music.AudioPlayerSendHandler;
-import com.sedmelluq.discord.lavaplayer.demo.music.MusicScheduler;
 import com.sedmelluq.discord.lavaplayer.filter.equalizer.EqualizerFactory;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -25,6 +23,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.DecodedTrackHolder;
 import com.sedmelluq.discord.lavaplayer.track.TrackMarker;
 
+import main.java.archives.Constants;
+import main.java.archives.Constants.Extensions;
+import main.java.archives.Constants.Files;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Message.Attachment;

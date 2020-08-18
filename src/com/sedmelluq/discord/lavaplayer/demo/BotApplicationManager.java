@@ -3,6 +3,7 @@ package com.sedmelluq.discord.lavaplayer.demo;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotCommandMappingHandler;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotController;
 import com.sedmelluq.discord.lavaplayer.demo.controller.BotControllerManager;
+import com.sedmelluq.discord.lavaplayer.demo.music.MusicController;
 import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -16,7 +17,6 @@ import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 
-import main.java.archives.MusicController;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
