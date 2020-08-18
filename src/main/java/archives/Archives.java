@@ -362,31 +362,27 @@ public class Archives extends ListenerAdapter
         			.queue();
         }
         else if (msg.equals("!도움")) {
-        	StringBuilder builder = new StringBuilder();
-        	
-        	builder.append("!뽑기 a b c ...			a b c ... 중 하나 뽑음\n")
-					.append("!뽑기 멤버				참가형 뽑기. !참가! 를 통해 참가하고 !참가종료! 시 참가자 중 한명 뽑음\n")
-					.append("\n")
-					.append("!멤버					현재 멤버 표시 (어떤 기준인지 잘 모르겠...\n")
-					.append("!검색 <검색어>				구글 검색\n")
-					.append("\n")
-					.append("!짤						현재 등록된 짤 리스트 출력\n")
-					.append("!짤 업데이트				현재 등록된 짤 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
-					.append("!짤 삭제 <짤 이름>			해당 짤 삭제\n")
-					.append("\n")
-					.append("짤 등록 : 짤을 추가하고싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!추가 <짤 이름>' 입력 후 올리기\n")
-					.append("\n")
-					.append("짤 수정 : 짤 이름에 해당하는 이미지를 수정하고 싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!수정 <짤 이름>' 입력 후 올리기\n")
-					.append("\n")
-					.append("음악 추가(유튜브) : !@p 링크\n")
-					.append("음악 추가(업로드 파일) : 파일 올리며 댓글에 !@p m\n")
-					.append("음악 스킵 : !/s\n")
-					.append("음악 재생목록 리스트 : !/list\n")
-					.append("음악 바로 재생 : !/now 링크 \n")
-					.append("음악 일시정지 : !/pause\n")
-					.append("음악 재생 : !/resume\n")
-					.append("음악 볼륨 : !/v 숫자\n");
-			channel.sendMessage(builder).queue();
+        	channel.sendMessage("!뽑기 a b c ...			a b c ... 중 하나 뽑음\n")
+						.append("!뽑기 멤버				참가형 뽑기. !참가! 를 통해 참가하고 !참가종료! 시 참가자 중 한명 뽑음\n")
+						.append("\n")
+						.append("!멤버					현재 멤버 표시 (어떤 기준인지 잘 모르겠...\n")
+						.append("!검색 <검색어>				구글 검색\n")
+						.append("\n")
+						.append("!짤						현재 등록된 짤 리스트 출력\n")
+						.append("!짤 업데이트				현재 등록된 짤 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
+						.append("!짤 삭제 <짤 이름>			해당 짤 삭제\n")
+						.append("\n")
+						.append("짤 등록 : 짤을 추가하고싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!추가 <짤 이름>' 입력 후 올리기\n")
+						.append("\n")
+						.append("짤 수정 : 짤 이름에 해당하는 이미지를 수정하고 싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!수정 <짤 이름>' 입력 후 올리기\n")
+						.append("\n")
+						.append("음악 추가(유튜브) : !/add 링크\n")
+						.append("음악 바로 재생 : !/now 링크 \n")
+						.append("음악 일시정지 : !/pause\n")
+						.append("음악 재생 : !/resume\n")
+						.append("음악 볼륨 : !/volume 숫자\n")
+						.append("음악 스킵 : !/skip \n")
+						.queue();
         }
         else if (msg.equals("!바이바이")) {
         	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
