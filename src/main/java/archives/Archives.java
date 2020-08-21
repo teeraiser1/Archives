@@ -401,15 +401,19 @@ public class Archives extends ListenerAdapter
 		
 		try {
             conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
-            
+
             stmt = conn.createStatement();
             rs = stmt.executeQuery("SELECT command FROM meme WHERE command = '" + command + "'");
-            
             if (rs.next()) {
     			channel.sendMessage("해당 명령어가 이미 존재합니다").queue();
             	throw new SQLException();
             }
-            
+
+            rs = stmt.executeQuery("SELECT path FROM meme WHERE path = '" + fileName + "'");
+            if (rs.next()) {
+    			channel.sendMessage("해당 이름과 동일한 이미지가 이미 존재합니다. 이미지명을 바꿔주세요.").queue();
+            	throw new SQLException();
+            }
     		
 			String atime_s = new SimpleDateFormat("yyyy-MM-dd").format(new Date(System.currentTimeMillis()));
             pstmt = conn.prepareStatement("INSERT INTO meme VALUES (?,?,?)");
@@ -449,11 +453,20 @@ public class Archives extends ListenerAdapter
     }
     private static void ModifyMemeData(String command, String fileName, MessageChannel channel, Attachment image) {
         Connection conn = null;
+        Statement stmt = null;
 		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		boolean isModified = true;
 		
 		try {
             conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
+            
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery("SELECT path FROM meme WHERE path = '" + fileName + "'");
+            if (rs.next()) {
+    			channel.sendMessage("해당 이름과 동일한 이미지가 이미 존재합니다. 이미지명을 바꿔주세요.").queue();
+            	throw new SQLException();
+            }
             
             pstmt = conn.prepareStatement("UPDATE meme SET path = ? WHERE command = ?");
             pstmt.setString(1, fileName);
@@ -563,6 +576,7 @@ public class Archives extends ListenerAdapter
 	       	}
     	}
     }
+    
     
     private void CheckMemeCommand(MessageChannel channel, String command) {
     	for (MemeCmd cmd : Memecmds) {
