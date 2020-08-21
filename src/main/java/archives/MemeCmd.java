@@ -22,6 +22,9 @@ public class MemeCmd {
     	public String getPath() {
     		return path;
     	}
+    	public String setPath(String path) {
+    		return this.path = path;
+    	}
     	public Date getAtime() {
     		return atime;
     	}

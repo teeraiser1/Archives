@@ -499,13 +499,11 @@ public class MusicController implements BotController {
   public static class Factory implements BotControllerFactory<MusicController> {
     @Override
     public Class<MusicController> getControllerClass() {
-    	System.out.println("Getting MusicController");
       return MusicController.class;
     }
 
     @Override
     public MusicController create(BotApplicationManager manager, BotGuildContext state, Guild guild) {
-    	System.out.println("Creating MusicController");
       return new MusicController(manager, state, guild);
     }
   }

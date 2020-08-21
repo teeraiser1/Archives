@@ -25,6 +25,7 @@ import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
 
 /* This project is based on JDA example "MessageListenerExample.java" */
 
@@ -34,8 +35,6 @@ public class Archives extends ListenerAdapter
 	private boolean isAttending = false;
 	private Vector<String> participants = new Vector<String>();
 	private static Vector<MemeCmd> Memecmds = new Vector<MemeCmd>();
-	private static Connection connection_meme;
-	private static Statement statement_meme;
 	
 	
 	private static int MEME_ADD = 0;
@@ -61,7 +60,6 @@ public class Archives extends ListenerAdapter
             jda.awaitReady(); // Blocking guarantees that JDA will be completely loaded.
 
             Class.forName("com.mysql.cj.jdbc.Driver");
-            connection_meme = DriverManager.getConnection(PrivateData.DBurl_meme, PrivateData.DBroot, PrivateData.DBpass);
 			System.out.println("DB connection success");
 
 	        InitDir();
@@ -82,10 +80,6 @@ public class Archives extends ListenerAdapter
             // you use awaitReady in a thread that has the possibility of being interrupted (async thread usage and interrupts)
             e.printStackTrace();
         }
-        catch (SQLException e) {
-			System.out.println("DB connection fail : "  + e.toString());
-			e.printStackTrace();
-		}
         catch (ClassNotFoundException e) {
 			System.out.println("Driver load fail : " + e.toString());
 			e.printStackTrace();
@@ -177,7 +171,7 @@ public class Archives extends ListenerAdapter
         /************* 뽑기 관련 기능 ***************/
         else if (msg.startsWith("!뽑기"))
         {
-        	String[] argList = extractArgs(msg);
+        	String[] argList = ExtractArgs(msg);
         	if (argList != null) {
 	        	if (argList.length == 1 && argList[0].equals("멤버")) {
 	        		if (isAttending)
@@ -241,46 +235,23 @@ public class Archives extends ListenerAdapter
         	}
         }
         
-        /************* 짤 관련 기능 ***************/
+        /******************** 짤 관련 기능 **********************/
         else if (msg.startsWith("!짤"))
         {
         	String[] args = null;
-        	if ((args = extractArgs(msg)) != null) {
+        	if ((args = ExtractArgs(msg)) != null) {
 	        	if (args[0].equals("업데이트")) {
 	        		Memecmds.clear();
 	        		LoadMemeData();
-		        	channel.sendMessage("업데이트 되었습니다")
-		    			.queue();
+		        	channel.sendMessage("업데이트 되었습니다").queue();
 	        	}
 	        	else if (args[0].equals("삭제")) {
 	            	String command = args[1];
-	            	 boolean isCommandExist = false;
-	            	
-	            	for (MemeCmd cmd : Memecmds) {
-	            		if (cmd.getCommand().equals(command)) {
-	            			if (new File(cmd.getPath()).delete()) {
-				            	isCommandExist = true;
-				            	Memecmds.remove(cmd);
-				            	RemoveMemeData(cmd.getCommand());
-	            				channel.sendMessage("이미지가 성공적으로 삭제되었습니다.")
-	            						.queue();
-	            				System.out.println("Removed image " + cmd.getPath());
-	            			}
-	            			break;
-	            		}
-	            	}
-	            	if (!isCommandExist)
-        				channel.sendMessage("해당 이미지가 존재하지 않습니다." + command)
-						.queue();
+	            	DeleteMemeData(command, channel);
 	        	}
         	}
         	else {
-	        	String str = new String("");
-	        	for (int i = 0; i < Memecmds.size(); i++)
-	        		str += Memecmds.get(i).getCommand() + "\n";
-	        	
-	        	channel.sendMessage(str)
-	    			.queue();
+        		ShowMemeList(channel);
         	}
         }
         else if (msg.matches(".*소라고동님.*")) {
@@ -308,68 +279,27 @@ public class Archives extends ListenerAdapter
         		commandType = MEME_ADD;
 	        else if (comment.startsWith("!수정 ") && comment.length() > 4)
 	        	commandType = MEME_MODIFY;
-	        else if (comment.equals("!재생"))
-	        	commandType = MUSIC_PLAY;
     		
         	if (commandType == MEME_ADD || commandType == MEME_MODIFY){
             	boolean isExtentionValid = false;
-        		boolean isCommandExist = false;
-        		
+            	
 	        	for (String extention : Constants.Extensions.IMG)
-	        		if (extention.equals(attachment.getFileExtension())) {
+	        		if (extention.equals(attachment.getFileExtension()))
 	        			isExtentionValid = true;
-			        	if (commandType == MEME_ADD) {
-			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = attachment.getFileName();
-			            	isCommandExist = false;
-			            	
-			        		for (MemeCmd cmd : Memecmds) {
-			            		if (cmd.getCommand().equals(command)) {
-			            			isCommandExist = true;
-			            			break;
-			            		}
-			            	}
-			        		if (!isCommandExist) {
-				        		Memecmds.add(new MemeCmd(command, fileName, new Date(System.currentTimeMillis())));
-				        		AddMemeData(command, fileName);
-				            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
-								.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
-			        			channel.sendMessage("성공적으로 이미지가 등록되었습니다")
-	        							.queue();
-			        		}
-			        		else
-			        			channel.sendMessage("이미 해당 명령어의 이미지가 존재합니다")
-			        					.queue();
-			        			
-			        	}
-			        	else if (commandType == MEME_MODIFY) {
-			            	String command = comment.substring(comment.indexOf(' ') + 1);
-			        		String fileName = attachment.getFileName();
-			            	
-			            	for (MemeCmd cmd : Memecmds) {
-			            		if (cmd.getCommand().equals(command)) {
-			            			if (new File(Constants.Files.MEME_PATH + cmd.getPath()).delete()) {
-			    		            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
-			    						.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
-			            				
-			    		        		Memecmds.add(new MemeCmd(command, fileName, new Date(System.currentTimeMillis())));
-			            				Memecmds.remove(cmd);
-			            				ModifyMemeData(command, fileName);
-			            				
-			            				channel.sendMessage("이미지가 성공적으로 변경되었습니다.")
-			            						.queue();
-			            				System.out.println("Changed image from \"" + cmd.getPath() + "\" to \"" + fileName + "\"");
-			            			}
-			            			break;
-			            		}
-			            	}
-			        		
-			        	}
-			        	break;
-	        		}
-	        	if (!isExtentionValid)
-	        		channel.sendMessage("해당 확장자는 유효하지 않습니다.\n유효한 확장자 : " + ArgstoLine(Constants.Extensions.IMG, ","))
-	        				.queue();
+	        	
+	        	if (isExtentionValid) {
+            	String command = comment.substring(comment.indexOf(' ') + 1);
+        		String fileName = attachment.getFileName();
+        		
+		        	if (commandType == MEME_ADD) {
+		        		RegisterMemeData(command, fileName, channel, attachment);			        			
+		        	}
+		        	else if (commandType == MEME_MODIFY) {			        		
+	    				ModifyMemeData(command, fileName, channel, attachment);
+		        	}
+	        	}
+	        	else
+	        		channel.sendMessage("해당 확장자는 유효하지 않습니다.\n유효한 확장자 : " + ArgstoLine(Constants.Extensions.IMG, ",")).queue();
         	}
         }
         
@@ -381,53 +311,19 @@ public class Archives extends ListenerAdapter
         			.queue();
         }
         else if (msg.equals("!도움")) {
-        	StringBuilder builder = new StringBuilder();
-        	builder.append("!뽑기 a b c ...			a b c ... 중 하나 뽑음\n")
-					.append("!뽑기 멤버				참가형 뽑기. !참가! 를 통해 참가하고 !참가종료! 시 참가자 중 한명 뽑음\n")
-					.append("\n")
-					.append("!멤버					현재 멤버 표시 (어떤 기준인지 잘 모르겠...\n")
-					.append("!검색 <검색어>				구글 검색\n")
-					.append("\n")
-					.append("!짤						현재 등록된 짤 리스트 출력\n")
-					.append("!짤 업데이트				현재 등록된 짤 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
-					.append("!짤 삭제 <짤 이름>			해당 짤 삭제\n")
-					.append("\n")
-					.append("짤 등록 : 짤을 추가하고싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!추가 <짤 이름>' 입력 후 올리기\n")
-					.append("\n")
-					.append("짤 수정 : 짤 이름에 해당하는 이미지를 수정하고 싶을 경우. 대화창에 이미지를 올리고 '올리기' 버튼을 누르기 전에 댓글로 '!수정 <짤 이름>' 입력 후 올리기\n")
-					.append("\n")
-					.append("음악 추가(유튜브) 	  	: !@p 링크\n")
-					.append("음악 추가(업로드 파일)  : 파일 올리며 댓글에 !@p m\n")
-					.append("음악 스킵 			  		   : !@s\n")
-					.append("음악 재생목록 리스트     : !@list\n")
-					.append("음악 바로 재생 				: !@now 링크 \n")
-					.append("음악 일시정지 				 : !@pause\n")
-					.append("음악 재생 					     : !@resume\n")
-					.append("음악 볼륨 					     : !@v 숫자\n");
-			channel.sendMessage(builder).queue();
+        	ShowHelp(channel);
         }
         else if (msg.equals("!바이바이")) {
         	Shutdown(channel);
         }
         else {
-        	for (MemeCmd cmd : Memecmds) {
-        		if (cmd.getCommand().equals(msg)) {
-        			File targetFile = new File(Constants.Files.MEME_PATH + cmd.getPath());
-        			if (targetFile.exists()) {
-	                	channel.purgeMessagesById(channel.getLatestMessageId());
-	                	channel.sendFile(targetFile)
-	                			.queue();
-        			}
-        			else
-        				channel.sendMessage("해당 이미지가 존재하지 않습니다 " + targetFile.toString())
-        						.queue();
-        		}
-        	}
+        	CheckMemeCommand(channel, msg);
         }
     }
-    
  
-    private String[] extractArgs(String message) {
+    
+    
+    private String[] ExtractArgs(String message) {
     	int arg_index = message.indexOf(" ") + 1;
     	if (arg_index < 1)
     		return null;
@@ -472,19 +368,24 @@ public class Archives extends ListenerAdapter
     }
             
     private static void LoadMemeData() {
+        Connection conn = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		
     	try {            
-    		statement_meme = connection_meme.createStatement();
-    		ResultSet rs = statement_meme.executeQuery("SELECT command, path, date_format(atime, '%Y-%m-%d') FROM meme");
+            conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
+    		stmt = conn.createStatement();
+    		rs = stmt.executeQuery("SELECT command, path, date_format(atime, '%Y-%m-%d') FROM meme");
 
-    		
             while (rs.next()) {
             	String command = rs.getString(1);
             	String path = rs.getString(2);
             	String atime_s = rs.getString(3);
             	Date atime = Date.valueOf(atime_s);
     			Memecmds.add(new MemeCmd(command, path, atime));
-    			System.out.println(command + " is expired? : " + Memecmds.get(Memecmds.size() - 1).isCommandValid());
             }
+			if (conn != null && !conn.isClosed())
+				conn.close();
 			System.out.println("Meme data load success");
     	}
     	catch (SQLException e) {
@@ -492,86 +393,241 @@ public class Archives extends ListenerAdapter
 			e.printStackTrace();
 		}
     }
-    private static void AddMemeData(String command, String fileName) {
-    	try {
-        	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(Constants.Files.MEME_DATAFILE), true));
-        	bufferedWriter.write(MakeMemeCmdLine(command, fileName));
-        	bufferedWriter.flush();
-        	bufferedWriter.close();
-    	}
-    	catch(FileNotFoundException e) {
-    		System.out.println("FileNotFoundException occur : " + e.toString());
-    	}
-    	catch(IOException e) {
-    		System.out.println("IOException occur : " + e.toString());
-    	}
-    }
-    private static void ModifyMemeData(String command, String fileName) {
-    	try {
-        	File originFile = new File(Constants.Files.MEME_DATAFILE);
-    		File tmpFile = File.createTempFile("meme", "", new File(Constants.Files.DATA_PATH));
+    private static void RegisterMemeData(String command, String fileName, MessageChannel channel, Attachment image) {
+        Connection conn = null;
+        Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		try {
+            conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
+            
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery("SELECT command FROM meme WHERE command = '" + command + "'");
+            
+            if (rs.next()) {
+    			channel.sendMessage("해당 명령어가 이미 존재합니다").queue();
+            	throw new SQLException();
+            }
+            
     		
-			BufferedReader bufferedReader = new BufferedReader(new FileReader(originFile));
-        	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tmpFile, true));
-        	String tmp = null;
-        	while ((tmp = bufferedReader.readLine()) != null) {
-        		if (!tmp.isEmpty()) {
-	        		if (!tmp.subSequence(0,  tmp.indexOf('\t')).equals(command))
-	            		bufferedWriter.write(tmp + "\r\n");
-	        		else
-	                	bufferedWriter.write(MakeMemeCmdLine(command, fileName));
-        		}
-        		
-        	}
-        	
-        	bufferedReader.close();
-        	bufferedWriter.flush();
-        	bufferedWriter.close();
-        	
-        	originFile.delete();
-        	tmpFile.renameTo(new File(Constants.Files.MEME_DATAFILE));
-    	}
-    	catch(FileNotFoundException e) {
-    		System.out.println("FileNotFoundException occur : " + e.toString());
-    	}
-    	catch(IOException e) {
-    		System.out.println("IOException occur : " + e.toString());
-    	}
+			String atime_s = new SimpleDateFormat("yyyy-MM-dd").format(new Date(System.currentTimeMillis()));
+            pstmt = conn.prepareStatement("INSERT INTO meme VALUES (?,?,?)");
+
+            pstmt.setString(1, command);
+            pstmt.setString(2, fileName);
+            pstmt.setString(3, atime_s);
+            
+            int count = pstmt.executeUpdate();
+            if(count == 1){
+    			System.out.println("Meme register success : " + command);
+
+    			Memecmds.add(new MemeCmd(command, fileName, new Date(System.currentTimeMillis())));
+    	    	image.downloadToFile(Constants.Files.MEME_PATH + fileName)
+    			.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
+    	    	
+    			channel.sendMessage("성공적으로 이미지가 등록되었습니다").queue();
+            }
+            else{
+    			System.out.println("Meme register error : " + command);
+            }
+		} 
+		catch (SQLException e) {
+    		channel.sendMessage("이미지 추가에 실패하였습니다.").queue();
+			System.out.println("Meme register fail : " + e.toString());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if (conn != null && !conn.isClosed())
+					conn.close();
+			} catch (SQLException e) {
+				System.out.println("connection close fail : " + e.toString());
+				e.printStackTrace();
+			}
+		}
     }
-    private static void RemoveMemeData(String command) {
+    private static void ModifyMemeData(String command, String fileName, MessageChannel channel, Attachment image) {
+        Connection conn = null;
+		PreparedStatement pstmt = null;
+		boolean isModified = true;
+		
+		try {
+            conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
+            
+            pstmt = conn.prepareStatement("UPDATE meme SET path = ? WHERE command = ?");
+            pstmt.setString(1, fileName);
+            pstmt.setString(2, command);
+            
+            int count = pstmt.executeUpdate();
+            if(count == 1){
+    			System.out.println("Meme modify success : " + command);
+            }
+            else{
+        		channel.sendMessage("이미지 수정에 실패하였습니다.").queue();
+    			System.out.println("Meme modify error : " + command);
+    			isModified = false;
+            }
+		} 
+		catch (SQLException e) {
+    		channel.sendMessage("이미지 수정에 실패하였습니다.").queue();
+			System.out.println("Meme modify fail : " + e.toString());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if (conn != null && !conn.isClosed())
+					conn.close();
+			} catch (SQLException e) {
+				System.out.println("connection close fail : " + e.toString());
+				e.printStackTrace();
+			}
+		}
+
+		if (isModified) {
+	    	for (MemeCmd cmd : Memecmds) {
+	    		if (cmd.getCommand().equals(command)) {
+	    			if (new File(Constants.Files.MEME_PATH + cmd.getPath()).delete()) {
+	    				image.downloadToFile(Constants.Files.MEME_PATH + fileName)
+						.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
+	    				
+	        			cmd.setPath(fileName);
+	    			}
+	    			break;
+	    		}
+	    	}
+		}
+		channel.sendMessage("이미지가 성공적으로 변경되었습니다.").queue();
+    }
+    private static void DeleteMemeData(String command, MessageChannel channel) {
+	    Connection conn = null;
+	    Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		boolean isDeleted = true;
+		
     	try {
-        	File originFile = new File(Constants.Files.MEME_DATAFILE);
-    		File tmpFile = File.createTempFile("meme", "", new File(Constants.Files.DATA_PATH));
+            conn = DriverManager.getConnection(PrivateData.DB.url, PrivateData.DB.root, PrivateData.DB.pass);
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery("SELECT command FROM meme WHERE command = '" + command + "'");
+            
+            if (!rs.next()) {
+    			channel.sendMessage("해당 이미지가 존재하지 않습니다." + command).queue();
+            	throw new SQLException();
+            }
     		
-			BufferedReader bufferedReader = new BufferedReader(new FileReader(originFile));
-        	BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tmpFile, true));
-        	String tmp = null;
-        	while ((tmp = bufferedReader.readLine()) != null) {
-        		if (!tmp.isEmpty() && !tmp.subSequence(0,  tmp.indexOf('\t')).equals(command))
-            		bufferedWriter.write(tmp + "\r\n");
-        	}
-        	
-        	bufferedReader.close();
-        	bufferedWriter.flush();
-        	bufferedWriter.close();
-        	
-        	originFile.delete();
-        	tmpFile.renameTo(new File(Constants.Files.DATA_PATH + "meme.txt"));
+            pstmt = conn.prepareStatement("DELETE FROM meme WHERE command = ?");
+            pstmt.setString(1, command);
+            
+            int count = pstmt.executeUpdate();
+            if(count == 1){
+    			System.out.println("Meme delete success : " + command);
+            }
+            else{
+        		channel.sendMessage("이미지 삭제에 실패하였습니다.").queue();
+    			System.out.println("Meme delete error : " + command);
+    			isDeleted = false;
+            }
     	}
-    	catch(FileNotFoundException e) {
-    		System.out.println("FileNotFoundException occur : " + e.toString());
-    	}
-    	catch(IOException e) {
-    		System.out.println("IOException occur : " + e.toString());
-    	}
-    }
-    private static String MakeMemeCmdLine(String command, String fileName) {
-    	String buffer = command + "\t";
-    	if (command.length() < 5)
-    		buffer += "\t" ;
-    	buffer += fileName + "\n";
+    	catch (SQLException e) {
+    		channel.sendMessage("이미지 삭제에 실패하였습니다.").queue();
+			System.out.println("Meme delete fail : " + e.toString());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if (conn != null && !conn.isClosed())
+					conn.close();
+			} catch (SQLException e) {
+				System.out.println("connection close fail : " + e.toString());
+				e.printStackTrace();
+			}
+		}
     	
-    	return buffer;
+
+    	if (isDeleted) {
+	       	for (MemeCmd cmd : Memecmds) {
+	       		if (cmd.getCommand().equals(command)) {
+	       			if (new File(Constants.Files.MEME_PATH + cmd.getPath()).delete()) {
+	    	            Memecmds.remove(cmd);
+	       				channel.sendMessage("이미지가 성공적으로 삭제되었습니다.").queue();
+	       				System.out.println("Removed image " + cmd.getPath());
+	       			}
+	       			else {
+	       				channel.sendMessage("이미지 삭제 중 에러가 발생했습니다.(이미지 파일 제거 실패)").queue();
+	       				System.out.println("Delete image error : " + cmd.getPath());
+	       			}
+       				
+	       			break;
+	       		}
+	       	}
+    	}
+    }
+    
+    private void CheckMemeCommand(MessageChannel channel, String command) {
+    	for (MemeCmd cmd : Memecmds) {
+    		if (cmd.getCommand().equals(command)) {
+    			File targetFile = new File(Constants.Files.MEME_PATH + cmd.getPath());
+    			if (targetFile.exists()) {
+                	channel.purgeMessagesById(channel.getLatestMessageId());
+                	channel.sendFile(targetFile)
+                			.queue();
+    			}
+    			else
+    				channel.sendMessage("해당 이미지가 존재하지 않습니다 " + targetFile.toString())
+    						.queue();
+    		}
+    	}
+    }
+    
+    private void ShowMemeList(MessageChannel channel) {
+    	String str = new String("");
+    	for (int i = 0; i < Memecmds.size(); i++)
+    		str += Memecmds.get(i).getCommand() + "\n";
+    	
+    	channel.sendMessage(str).queue();
+    }
+    
+    private void ShowHelp(MessageChannel channel) {
+    	StringBuilder builder = new StringBuilder();
+    	builder.append("!뽑기 a b c ...\n")
+		    	.append("    : a b c ... 중 하나 뽑음\n")
+				.append("!뽑기 멤버\n")
+				.append("    : 참가형 뽑기. !참가! 를 통해 참가하고 !참가종료! 시 참가자 중 한명 뽑음\n")
+				.append("\n")
+				.append("!멤버\n")
+				.append("    : 멤버 표시 (어떤 기준인지 잘 모르겠...\n")
+				.append("!검색\n")
+				.append("    : 구글 검색\n")
+				.append("\n")
+				.append("!짤\n")
+				.append("    : 현재 등록된 짤 리스트 출력\n")
+				.append("!짤 업데이트\n")
+				.append("    : 현재 등록된 짤 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
+				.append("!짤 삭제 짤이름	\n")
+				.append("    : 해당 짤 삭제\n")
+				.append("파일 올리며 댓글에 !추가 짤이름\n")
+				.append("    : 짤 등록\n")
+				.append("파일 올리며 댓글에 !수정 짤이름\n")
+				.append("    : 짤 수정\n")
+				.append("\n")
+				.append("!@p 링크\n")
+				.append("    : 음악 추가(유튜브)\n")
+				.append("파일 올리며 댓글에 !@p m\n")
+				.append("    : 음악 추가(업로드 파일)\n")
+				.append("!@s\n")
+				.append("    : 음악 스킵\n")
+				.append("!@list\n")
+				.append("    : 음악 재생목록 리스트\n")
+				.append("!@now 링크\n")
+				.append("    : 음악 바로 재생\n")
+				.append("!@pause\n")
+				.append("    : 음악 일시정지\n")
+				.append("!@resume\n")
+				.append("    : 음악 재생\n")
+				.append("!@v 숫자\n")
+				.append("    : 음악 볼륨\n");
+		channel.sendMessage(builder).queue();
     }
     
     private void Shutdown(MessageChannel channel) {
@@ -581,13 +637,8 @@ public class Archives extends ListenerAdapter
     	
     	try {
 			Thread.sleep(1000);
-			if (connection_meme != null && !connection_meme.isClosed())
-			connection_meme.close();
 		} catch (InterruptedException e) {
 			System.out.println("sleep fail : " + e.toString());
-			e.printStackTrace();
-		} catch (SQLException e) {
-			System.out.println("DB close fail : " + e.toString());
 			e.printStackTrace();
 		}
     	System.exit(0);
