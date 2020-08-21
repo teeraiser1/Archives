@@ -24,13 +24,18 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
+import java.sql.*;
+
 /* This project is based on JDA example "MessageListenerExample.java" */
 
 public class Archives extends ListenerAdapter
 {
+	private static JDA jda;
 	private boolean isAttending = false;
 	private Vector<String> participants = new Vector<String>();
 	private static Vector<MemeCmd> Memecmds = new Vector<MemeCmd>();
+	private static Connection connection_meme;
+	private static Statement statement_meme;
 	
 	
 	private static int MEME_ADD = 0;
@@ -49,11 +54,19 @@ public class Archives extends ListenerAdapter
         // we would use AccountType.CLIENT
         try
         {
-            JDA jda = JDABuilder.createDefault(PrivateData.TOKEN) // The token of the account that is logging in.
+            jda = JDABuilder.createDefault(PrivateData.TOKEN) // The token of the account that is logging in.
                     .addEventListeners(new Archives())   // An instance of a class that will handle events.
                     .addEventListeners(new BotApplicationManager())
                     .build();
             jda.awaitReady(); // Blocking guarantees that JDA will be completely loaded.
+
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            connection_meme = DriverManager.getConnection(PrivateData.DBurl_meme, PrivateData.DBroot, PrivateData.DBpass);
+			System.out.println("DB connection success");
+
+	        InitDir();
+	        LoadMemeData();
+            
             System.out.println("Finished Building JDA!");
         }
         catch (LoginException e)
@@ -69,9 +82,15 @@ public class Archives extends ListenerAdapter
             // you use awaitReady in a thread that has the possibility of being interrupted (async thread usage and interrupts)
             e.printStackTrace();
         }
+        catch (SQLException e) {
+			System.out.println("DB connection fail : "  + e.toString());
+			e.printStackTrace();
+		}
+        catch (ClassNotFoundException e) {
+			System.out.println("Driver load fail : " + e.toString());
+			e.printStackTrace();
+		}
         
-        InitDir();
-        ReadMemeData();
     }
 
     /**
@@ -229,7 +248,7 @@ public class Archives extends ListenerAdapter
         	if ((args = extractArgs(msg)) != null) {
 	        	if (args[0].equals("업데이트")) {
 	        		Memecmds.clear();
-	        		ReadMemeData();
+	        		LoadMemeData();
 		        	channel.sendMessage("업데이트 되었습니다")
 		    			.queue();
 	        	}
@@ -239,13 +258,13 @@ public class Archives extends ListenerAdapter
 	            	
 	            	for (MemeCmd cmd : Memecmds) {
 	            		if (cmd.getCommand().equals(command)) {
-	            			if (new File(cmd.getFileName()).delete()) {
+	            			if (new File(cmd.getPath()).delete()) {
 				            	isCommandExist = true;
 				            	Memecmds.remove(cmd);
 				            	RemoveMemeData(cmd.getCommand());
 	            				channel.sendMessage("이미지가 성공적으로 삭제되었습니다.")
 	            						.queue();
-	            				System.out.println("Removed image " + cmd.getFileName());
+	            				System.out.println("Removed image " + cmd.getPath());
 	            			}
 	            			break;
 	            		}
@@ -311,7 +330,7 @@ public class Archives extends ListenerAdapter
 			            		}
 			            	}
 			        		if (!isCommandExist) {
-				        		Memecmds.add(new MemeCmd(command, fileName));
+				        		Memecmds.add(new MemeCmd(command, fileName, new Date(System.currentTimeMillis())));
 				        		AddMemeData(command, fileName);
 				            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
 								.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
@@ -329,17 +348,17 @@ public class Archives extends ListenerAdapter
 			            	
 			            	for (MemeCmd cmd : Memecmds) {
 			            		if (cmd.getCommand().equals(command)) {
-			            			if (new File(Constants.Files.MEME_PATH + cmd.getFileName()).delete()) {
+			            			if (new File(Constants.Files.MEME_PATH + cmd.getPath()).delete()) {
 			    		            	attachment.downloadToFile(Constants.Files.MEME_PATH + fileName)
 			    						.thenAccept(file -> System.out.println("Saved attachment to " + file.getName()));
 			            				
-			    		        		Memecmds.add(new MemeCmd(command, fileName));
+			    		        		Memecmds.add(new MemeCmd(command, fileName, new Date(System.currentTimeMillis())));
 			            				Memecmds.remove(cmd);
 			            				ModifyMemeData(command, fileName);
 			            				
 			            				channel.sendMessage("이미지가 성공적으로 변경되었습니다.")
 			            						.queue();
-			            				System.out.println("Changed image from \"" + cmd.getFileName() + "\" to \"" + fileName + "\"");
+			            				System.out.println("Changed image from \"" + cmd.getPath() + "\" to \"" + fileName + "\"");
 			            			}
 			            			break;
 			            		}
@@ -388,21 +407,12 @@ public class Archives extends ListenerAdapter
 			channel.sendMessage(builder).queue();
         }
         else if (msg.equals("!바이바이")) {
-        	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
-        	channel.sendFile(targetFile).queue();
-        	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
-        	try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	System.exit(0);
+        	Shutdown(channel);
         }
         else {
         	for (MemeCmd cmd : Memecmds) {
         		if (cmd.getCommand().equals(msg)) {
-        			File targetFile = new File(Constants.Files.MEME_PATH + cmd.getFileName());
+        			File targetFile = new File(Constants.Files.MEME_PATH + cmd.getPath());
         			if (targetFile.exists()) {
 	                	channel.purgeMessagesById(channel.getLatestMessageId());
 	                	channel.sendFile(targetFile)
@@ -457,41 +467,30 @@ public class Archives extends ListenerAdapter
         if (!data_path.exists()) {
         	data_path.mkdir();
         }
+
+		System.out.println("Essensial file init success");
     }
             
-    private static void ReadMemeData() {
-    	try {
-    		File meme_path = new File(Constants.Files.MEME_PATH);
-            if (!meme_path.exists()) {
-            	meme_path.mkdir();
+    private static void LoadMemeData() {
+    	try {            
+    		statement_meme = connection_meme.createStatement();
+    		ResultSet rs = statement_meme.executeQuery("SELECT command, path, date_format(atime, '%Y-%m-%d') FROM meme");
+
+    		
+            while (rs.next()) {
+            	String command = rs.getString(1);
+            	String path = rs.getString(2);
+            	String atime_s = rs.getString(3);
+            	Date atime = Date.valueOf(atime_s);
+    			Memecmds.add(new MemeCmd(command, path, atime));
+    			System.out.println(command + " is expired? : " + Memecmds.get(Memecmds.size() - 1).isCommandValid());
             }
-            
-    		File data_path = new File(Constants.Files.DATA_PATH);
-            if (!data_path.exists()) {
-            	data_path.mkdir();
-            }
-            
-    		File meme_DataFile = new File(Constants.Files.MEME_DATAFILE);
-            if (!meme_DataFile.exists()) {
-            	meme_DataFile.createNewFile();
-            }
-            else {
-            	BufferedReader bufferedReader = new BufferedReader(new FileReader(meme_DataFile));
-            	String tmp = null;
-            	while ((tmp = bufferedReader.readLine()) != null) {
-            		if (!tmp.isEmpty())
-            			Memecmds.add(new MemeCmd(tmp.substring(0, tmp.indexOf('\t')), tmp.substring(tmp.lastIndexOf('\t') + 1, tmp.length())));
-            	}
-            
-            	bufferedReader.close();
-            }
+			System.out.println("Meme data load success");
     	}
-    	catch(FileNotFoundException e) {
-    		System.out.println("FileNotFoundException occur : " + e.toString());
-    	}
-    	catch(IOException e) {
-    		System.out.println("IOException occur : " + e.toString());
-    	}
+    	catch (SQLException e) {
+    		System.out.println("Meme load fail : " + e.toString());
+			e.printStackTrace();
+		}
     }
     private static void AddMemeData(String command, String fileName) {
     	try {
@@ -573,6 +572,25 @@ public class Archives extends ListenerAdapter
     	buffer += fileName + "\n";
     	
     	return buffer;
+    }
+    
+    private void Shutdown(MessageChannel channel) {
+    	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
+    	channel.sendFile(targetFile).queue();
+    	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
+    	
+    	try {
+			Thread.sleep(1000);
+			if (connection_meme != null && !connection_meme.isClosed())
+			connection_meme.close();
+		} catch (InterruptedException e) {
+			System.out.println("sleep fail : " + e.toString());
+			e.printStackTrace();
+		} catch (SQLException e) {
+			System.out.println("DB close fail : " + e.toString());
+			e.printStackTrace();
+		}
+    	System.exit(0);
     }
 
       
