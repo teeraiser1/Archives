@@ -6,6 +6,7 @@ public final class Constants {
 		public static final String MEME_PATH = ROOT_PATH + "resources//meme//";
 		public static final String MUSIC_PATH = ROOT_PATH + "resources//music//";
 		public static final String DATA_PATH = ROOT_PATH + "data//";
+		public static final String LOG_PATH = ROOT_PATH + "log//";
 		public static final String MEME_DATAFILE = DATA_PATH + "meme.txt";
 	}
 	public static final class Extensions {

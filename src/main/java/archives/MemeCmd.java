@@ -28,8 +28,12 @@ public class MemeCmd {
     	public Date getAtime() {
     		return atime;
     	}
-    	public boolean isCommandValid() {
-    		Date curtime = new Date(System.currentTimeMillis() - 1000*60*60*24*14);
-    		return atime.after(curtime);
+    	public boolean isCommandExpired() {
+    		int days = 1000*60*60*24;
+    		Date curtime = new Date(System.currentTimeMillis() - 21*days);
+    		return atime.before(curtime);
+    	}
+    	public void updateAtime() {
+    		atime = new Date(System.currentTimeMillis());
     	}
 }
