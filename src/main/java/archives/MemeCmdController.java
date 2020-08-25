@@ -11,15 +11,48 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
 
+import main.java.archives.MemeCmdController.MemeCmd;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 
 public class MemeCmdController {
 	private static Vector<MemeCmd> Memecmds = new Vector<MemeCmd>();
 	
-	public static Vector<MemeCmd> getMemeCmdList() {
-		return Memecmds;
-	}
+	public static class MemeCmd {
+		private String command;
+    	private String path;
+    	private Date atime;
+    	
+    	public MemeCmd(String command, String path, Date atime) {
+    		this.command = command;
+    		this.path = path;
+    		this.atime = atime;
+		}
+    	public MemeCmd(String[] memeCmd) {
+    		this.command = memeCmd[0];
+    		this.path = memeCmd[1];
+		}
+		public String getCommand() {
+    		return command;
+    	}
+    	public String getPath() {
+    		return path;
+    	}
+    	public String setPath(String path) {
+    		return this.path = path;
+    	}
+    	public Date getAtime() {
+    		return atime;
+    	}
+    	public boolean isCommandExpired() {
+    		int days = 1000*60*60*24;
+    		Date curtime = new Date(System.currentTimeMillis() - 21*days);
+    		return atime.before(curtime);
+    	}
+    	public void updateAtime() {
+    		atime = new Date(System.currentTimeMillis());
+    	}
+}
 
     public static void loadMemeCmd() {
         Connection conn = null;
@@ -309,4 +342,14 @@ public class MemeCmdController {
     			return cmd;
     	return null;
     }
+    
+    public static void checkExpiredMeme() {
+    	for (MemeCmd mcmd : MemeCmdController.getMemeCmdList())
+    		if (mcmd.isCommandExpired())
+    			MemeCmdController.deleteMemeCmd(mcmd.getCommand(), null);
+    }
+    
+	public static Vector<MemeCmd> getMemeCmdList() {
+		return Memecmds;
+	}
 }

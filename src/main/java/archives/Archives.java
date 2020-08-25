@@ -12,13 +12,8 @@ import javax.security.auth.login.LoginException;
 
 import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
@@ -26,7 +21,6 @@ import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
 
 /* This project is based on JDA example "MessageListenerExample.java" */
 
@@ -368,8 +362,6 @@ public class Archives extends ListenerAdapter
 		System.out.println("Essensial file init success");
     }
             
-
-    
     private void showMemeList(MessageChannel channel) {
     	String str = new String("");
     	for (int i = 0; i < MemeCmdController.getMemeCmdList().size(); i++)
@@ -449,10 +441,11 @@ public class Archives extends ListenerAdapter
 				System.out.println("InterruptedException : " + e.toString());
 				e.printStackTrace();
 			}
-
-        	for (MemeCmd mcmd : MemeCmdController.getMemeCmdList())
-        		if (mcmd.isCommandExpired())
-        			MemeCmdController.deleteMemeCmd(mcmd.getCommand(), null);
+    		
+    		{
+    			MemeCmdController.checkExpiredMeme();
+    		}
+    		
     		this.run();
     		
     	}
