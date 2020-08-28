@@ -14,7 +14,10 @@ import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -29,6 +32,7 @@ public class Archives extends ListenerAdapter
 	private static JDA jda;
 	private boolean isAttending = false;
 	private Vector<String> participants = new Vector<String>();
+	HashMap<String, Timestamp> studyTime = new HashMap<String, Timestamp>();
 	
 	
 	private static int MEME_ADD = 0;
@@ -310,6 +314,26 @@ public class Archives extends ListenerAdapter
         }
         else if (msg.equals("!바이바이")) {
         	shutdown(channel);
+        }
+        else if (msg.equals("!시작!")) {
+        	String userName = event.getAuthor().getName();
+        	if (!studyTime.containsKey(userName)) {
+        		Timestamp now = new Timestamp(System.currentTimeMillis());
+        		channel.sendMessage("공부 시작 : " + userName + " / " + now.toString());
+        		studyTime.put(userName, now);
+        	}
+        }
+        else if (msg.equals("!끝!")) {
+        	String userName = event.getAuthor().getName();
+        	if (studyTime.containsKey(userName)) {
+        		Timestamp start = studyTime.get(userName);
+        		Timestamp end = new Timestamp(System.currentTimeMillis());
+        		CumulativeTime ct = new CumulativeTime(end.getTime() - start.getTime());
+        		
+        		StatisticController.updateUserData("test", event.getGuild(), event.getAuthor().getName(), ct.toString());
+        		studyTime.remove(userName);
+        		System.out.println(ct.toString());
+        	}
         }
         else {
         	MemeCmdController.executeMemeCmd(channel, msg);

@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Vector;
 
 import main.java.archives.MemeCmdController.MemeCmd;
@@ -16,7 +17,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 
 public class MemeCmdController {
-	private static Vector<MemeCmd> Memecmds = new Vector<MemeCmd>();
+	private static List<MemeCmd> Memecmds = new Vector<MemeCmd>();
 	
 	public static class MemeCmd {
 		private String command;
@@ -349,7 +350,7 @@ public class MemeCmdController {
     			MemeCmdController.deleteMemeCmd(mcmd.getCommand(), null);
     }
     
-	public static Vector<MemeCmd> getMemeCmdList() {
+	public static List<MemeCmd> getMemeCmdList() {
 		return Memecmds;
 	}
 }

@@ -13,4 +13,9 @@ public final class Constants {
 		public static String[] IMG = {"jpg", "jpeg", "png", "gif"};
 		public static String[] TRACK = {"mp3", "flac", "wav"};
 	}
+	
+	public static final class Max {
+		public static int SERVER_ID_LENGTH = 10;
+		public static int TRIAL = 5;
+	}
 }
