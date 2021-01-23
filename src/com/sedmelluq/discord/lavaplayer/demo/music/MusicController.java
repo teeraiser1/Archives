@@ -38,6 +38,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -361,7 +363,9 @@ public class MusicController implements BotController {
             public void trackLoaded(AudioTrack track) {
               connectToFirstVoiceChannel(guild.getAudioManager());
 
-              message.getChannel().sendMessage("Starting now: " + track.getInfo().title + " (length " + track.getDuration() + ")").queue();
+              SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+              String duration_s = timeFormat.format(track.getDuration() - 32400000);	// DateFormat을 활용해 편하게 시간을 표현하기 위래 9시간치의 밀리초 뺌
+              message.getChannel().sendMessage("Starting now: " + track.getInfo().title + " (length " + duration_s + ")").queue();
 
               if (now) {
                 scheduler.playNow(track, true);

@@ -12,7 +12,7 @@ public class Logger {
 	public static void writeLog(String logFileName, String log) {
 		
 		File logPath = new File(Constants.Files.LOG_PATH);
-		File logFile = new File(Constants.Files.LOG_PATH + logFileName);
+		File logFile = new File(Constants.Files.LOG_PATH + logFileName + ".txt");
 		SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		StringBuilder builder = new StringBuilder();;
 		Date now = new Date(System.currentTimeMillis());

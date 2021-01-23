@@ -21,7 +21,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 
 public class StatisticController {
-	public static String getServerID(String serverName) {
+/*	public static String getServerID(String serverName) {
 		Connection conn = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -181,6 +181,6 @@ public class StatisticController {
 		}
 		
 		return true;
-	}
+	}*/
 	
 }

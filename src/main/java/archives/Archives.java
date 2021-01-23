@@ -4,8 +4,10 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message.Attachment;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.managers.AudioManager;
 import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
@@ -14,6 +16,7 @@ import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -24,6 +27,7 @@ import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
 
 /* This project is based on JDA example "MessageListenerExample.java" */
 
@@ -59,12 +63,19 @@ public class Archives extends ListenerAdapter
             Class.forName("com.mysql.cj.jdbc.Driver");
 			System.out.println("Loaded JDBC Driver");
 
-	        InitDir();
-	        MemeCmdController.loadMemeCmd();
-	        ExpiredMemeCheckThread checker = new ExpiredMemeCheckThread();
-	        checker.start();
+	        /************* 직접 구현한 기능들 *************/
+	        InitDir();	 // 필수 디렉토리 체크 및 생성
+
+	        
+	        /*** 사용한지 오래된 밈 명령어 제거  ***/
+	        ExpiredMemeCheckThread expireChecker = new ExpiredMemeCheckThread();
+	        expireChecker.start();
+	        AfkVoiceChannelCheckThread afkchecker = new AfkVoiceChannelCheckThread();
+	        afkchecker.start();
             
             System.out.println("Finished Building JDA!");
+
+            NotifyArchivesConnected();
         }
         catch (LoginException e)
         {
@@ -83,7 +94,6 @@ public class Archives extends ListenerAdapter
 			System.out.println("Driver load fail : " + e.toString());
 			e.printStackTrace();
 		}
-        
     }
 
     /**
@@ -102,6 +112,15 @@ public class Archives extends ListenerAdapter
      *          An event containing information about a {@link net.dv8tion.jda.api.entities.Message Message} that was
      *          sent in a channel.
      */
+
+    public void onGuildJoin(GuildJoinEvent event) {
+    	Guild guild = event.getGuild();
+    	
+        NotifyArchivesConnected();
+        createMemeTable(guild);
+        InitDir(guild.getId());
+    }
+    
     @Override
     public void onMessageReceived(MessageReceivedEvent event)
     {
@@ -110,6 +129,7 @@ public class Archives extends ListenerAdapter
         long responseNumber = event.getResponseNumber();//The amount of discord events that JDA has received since the last reconnect.
 
         //Event specific information
+        Guild guild = event.getGuild();             //The Guild that this message was sent in. (note, in the API, Guilds are Servers)
         User author = event.getAuthor();                //The user that sent the message
         Message message = event.getMessage();           //The message that was received.
         MessageChannel channel = event.getChannel();    //This is the MessageChannel that the message was sent to.
@@ -127,7 +147,6 @@ public class Archives extends ListenerAdapter
             // Note, if you don't check the ChannelType before using these methods, they might return null due
             // the message possibly not being from a Guild!
 
-            Guild guild = event.getGuild();             //The Guild that this message was sent in. (note, in the API, Guilds are Servers)
             TextChannel textChannel = event.getTextChannel(); //The TextChannel that this message was sent to.
             Member member = event.getMember();          //This Member that sent the message. Contains Guild specific information about the User!
 
@@ -160,8 +179,10 @@ public class Archives extends ListenerAdapter
         // message.getContentDisplay().equals, which is comparing a string to a string.
         // If you did message.equals() it will fail because you would be comparing a Message to a String!
         
+        
+        /************* 직접 구현한 기능들 *************/
         if (bot) {}
-        else if (msg.equals("하이"))
+        else if (msg.equals("하이"))	
         {
             channel.sendMessage("해-위")
                    .queue();
@@ -234,29 +255,24 @@ public class Archives extends ListenerAdapter
         	}
         }
         
-        /******************** 짤 관련 기능 **********************/
-        else if (msg.startsWith("!짤"))
+        /******************** 밈 명령어 관련 기능 **********************/
+        else if (msg.startsWith("!밈"))
         {
         	String[] args = null;
         	if ((args = extractArgs(msg)) != null) {
-	        	if (args[0].equals("업데이트")) {
-	        		MemeCmdController.getMemeCmdList().clear();
-	        		MemeCmdController.loadMemeCmd();
-		        	channel.sendMessage("업데이트 되었습니다").queue();
-	        	}
-	        	else if (args[0].equals("삭제")) {
+    			if (args[0].equals("삭제")) {
 	            	String command = args[1];
-	            	MemeCmdController.deleteMemeCmd(command, channel);
+	            	MemeCmdController.deleteMemeCmd(command, channel, guild.getId());
 	        	}
         	}
         	else {
-        		showMemeList(channel);
+        		showMemeList(channel, guild.getId());
         	}
         }
         else if (msg.matches(".*소라고동님.*")) {
-        	channel.sendFile(new File(Constants.Files.MEME_PATH + "soragodong_qst.jpeg"))
+        	channel.sendFile(new File(Constants.Files.MEME_COMMON_PATH + "soragodong_qst.jpeg"))
         			.queue();
-        	channel.sendFile(new File(Constants.Files.MEME_PATH + "soragodong_ans.jpeg"))
+        	channel.sendFile(new File(Constants.Files.MEME_COMMON_PATH + "soragodong_ans.jpeg"))
         			.queue();
 
         	Random rand = ThreadLocalRandom.current();
@@ -268,13 +284,13 @@ public class Archives extends ListenerAdapter
     			.queue();
         		
         }
-        ///////////////////// 짤 파일 입출력 및 자동화/////////////////////////////////
+        ///////////////////// 밈 파일 입출력 및 자동화/////////////////////////////////
         else if (!message.getAttachments().isEmpty() && !message.getContentRaw().isEmpty()){
         	Attachment attachment = message.getAttachments().get(0);
     		
     		int commandType = -1;
 			String comment = message.getContentRaw();
-        	if (comment.startsWith("!추가 ") && comment.length() > 4)
+        	if (comment.startsWith("!등록 ") && comment.length() > 4)
         		commandType = MEME_ADD;
 	        else if (comment.startsWith("!수정 ") && comment.length() > 4)
 	        	commandType = MEME_MODIFY;
@@ -291,31 +307,52 @@ public class Archives extends ListenerAdapter
         		String fileName = attachment.getFileName();
         		
 		        	if (commandType == MEME_ADD) {
-		        		MemeCmdController.registerMemeCmd(command, fileName, channel, attachment);			        			
+		        		MemeCmdController.registerMemeCmd(command, fileName, channel, guild.getId(), attachment);			        			
 		        	}
 		        	else if (commandType == MEME_MODIFY) {			        		
-		        		MemeCmdController.modifyMemeCmd(command, fileName, channel, attachment);
+		        		MemeCmdController.modifyMemeCmd(command, fileName, channel, guild.getId(), attachment);
 		        	}
 	        	}
 	        	else
 	        		channel.sendMessage("해당 확장자는 유효하지 않습니다.\n유효한 확장자 : " + argstoLine(Constants.Extensions.IMG, ",")).queue();
         	}
         }
-        
+
+        /******************** 구글 검색 링크 출력 **********************/
         else if (msg.startsWith("!검색 ")) {
-        	String searchUrl = "https://www.google.com/search?q=";
-        	String keyword = msg.substring(msg.indexOf(' ') + 1);
-        	keyword = keyword.replaceAll(" ", "+");
-        	channel.sendMessage(searchUrl + keyword)
-        			.queue();
+        	String[] args = null;
+        	if ((args = extractArgs(msg)) != null) {
+    			if (args[0].equals("구글")) {
+    	        	String searchUrl = "https://www.google.com/search?q=";
+	            	String keyword = args[1];
+		        	channel.sendMessage(searchUrl + keyword)
+		        			.queue();
+	        	}
+            	else if (args[0].equals("유튜브")) {
+    	        	String searchUrl = "https://www.youtube.com/results?search_query=";
+                	String keyword = args[1];
+    	        	channel.sendMessage(searchUrl + keyword)
+    	        			.queue();
+            	}
+        	}
         }
+        
+
+        /******************** help **********************/
         else if (msg.equals("!도움")) {
         	showHelp(channel);
+        }
+        /******************** 봇 재시작 및 종료 **********************/
+        else if (msg.equals("!재부팅")) {
+        	reboot(channel);
         }
         else if (msg.equals("!바이바이")) {
         	shutdown(channel);
         }
-        else if (msg.equals("!시작!")) {
+        
+        
+/*        	-- 사용되지 않는 기능
+ 			else if (msg.equals("!시작!")) {
         	String userName = event.getAuthor().getName();
         	if (!studyTime.containsKey(userName)) {
         		Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -332,11 +369,24 @@ public class Archives extends ListenerAdapter
         		
         		StatisticController.updateUserData("test", event.getGuild(), event.getAuthor().getName(), ct.toString());
         		studyTime.remove(userName);
-        		System.out.println(ct.toString());
+        	}
+        }*/
+        
+        else if (msg.startsWith("!debug")) {
+        	String[] args = null;
+        	if ((args = extractArgs(msg)) != null) {
+    			if (args[0].equals("createMemeTable")) {
+    	        	createMemeTable(guild);
+	        	}
+    			else if (args[0].equals("InitDir")) {
+    	        	InitDir(guild.getId());
+	        	}
         	}
         }
+
+        /******************** 밈 명령어 모니터링 **********************/
         else {
-        	MemeCmdController.executeMemeCmd(channel, msg);
+        	MemeCmdController.executeMemeCmd(channel, message, guild.getId());
         }
     }
  
@@ -378,21 +428,37 @@ public class Archives extends ListenerAdapter
         	meme_path.mkdir();
         }
         
+		File meme_common_path = new File(Constants.Files.MEME_COMMON_PATH);
+        if (!meme_common_path.exists()) {
+        	meme_common_path.mkdir();
+        }
+
+		File log_path = new File(Constants.Files.LOG_PATH);
+        if (!log_path.exists()) {
+        	log_path.mkdir();
+        }
+        
 		File data_path = new File(Constants.Files.DATA_PATH);
         if (!data_path.exists()) {
         	data_path.mkdir();
         }
 
-		System.out.println("Essensial file init success");
+		System.out.println("Essensial dir init success");
+    }
+    private static void InitDir(String guildID) {
+		File meme_guild_path = new File(Constants.Files.MEME_PATH + guildID + "//");
+        if (!meme_guild_path.exists()) {
+        	meme_guild_path.mkdir();
+        }
+
+		System.out.println("guild dir init success");
     }
             
-    private void showMemeList(MessageChannel channel) {
-    	String str = new String("");
-    	for (int i = 0; i < MemeCmdController.getMemeCmdList().size(); i++)
-    		str += MemeCmdController.getMemeCmdList().get(i).getCommand() + "\n";
-    	
+    private void showMemeList(MessageChannel channel, String guildID) {
+    	String str = MemeCmdController.showMemeCmd(guildID);
     	channel.sendMessage(str).queue();
     }
+    
     private void showHelp(MessageChannel channel) {
     	StringBuilder builder = new StringBuilder();
     	builder.append("!뽑기 a b c ...\n")
@@ -405,16 +471,16 @@ public class Archives extends ListenerAdapter
 				.append("!검색\n")
 				.append("    : 구글 검색\n")
 				.append("\n")
-				.append("!짤\n")
-				.append("    : 현재 등록된 짤 리스트 출력\n")
-				.append("!짤 업데이트\n")
-				.append("    : 현재 등록된 짤 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
-				.append("!짤 삭제 짤이름	\n")
-				.append("    : 해당 짤 삭제\n")
-				.append("파일 올리며 댓글에 !추가 짤이름\n")
-				.append("    : 짤 등록\n")
-				.append("파일 올리며 댓글에 !수정 짤이름\n")
-				.append("    : 짤 수정\n")
+				.append("!밈\n")
+				.append("    : 현재 등록된 밈 리스트 출력\n")
+				.append("!밈 업데이트\n")
+				.append("    : 현재 등록된 밈 업데이트. 이미지 넣었는데 없는 등 오류 떴을때 하기\n")
+				.append("!밈 삭제 밈이름	\n")
+				.append("    : 해당 밈 삭제\n")
+				.append("파일 올리며 댓글에 !등록 밈이름\n")
+				.append("    : 밈 등록\n")
+				.append("파일 올리며 댓글에 !수정 밈이름\n")
+				.append("    : 밈 수정\n")
 				.append("\n")
 				.append("!@p 링크\n")
 				.append("    : 음악 추가(유튜브)\n")
@@ -434,9 +500,37 @@ public class Archives extends ListenerAdapter
 				.append("    : 음악 볼륨\n");
 		channel.sendMessage(builder).queue();
     }
+    private void reboot(MessageChannel channel) {
+		try {
+			//Process archives = Runtime.getRuntime().exec(Constants.Files.ROOT_PATH + "Archives.jar");
+/*			System.out.println("java -jar " + System.getProperty("user.dir") + "\\Archives.jar");
+			Process archives = Runtime.getRuntime().exec("java -jar " + System.getProperty("user.dir") + "\\Archives.jar");
+			System.out.println(archives);*/
+			ProcessBuilder pb = new ProcessBuilder(System.getProperty("java.home"), "-jar", "Archives.jar");
+			//ProcessBuilder pb = new ProcessBuilder("P:\\Program Files\\Java\\jdk-15.0.1\\bin\\java.exe", "-jar", "Archives.jar");
+			pb.directory(new File(System.getProperty("user.dir")));
+			Process archives = pb.start();
+			
+			if (archives != null) {		    	
+				NotifyArchivesDisconnected();
+		    	try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					System.out.println("sleep fail : " + e.toString());
+					e.printStackTrace();
+				}
+		    	
+		    	System.exit(0);
+			}
+		} catch (IOException e) {
+			channel.sendMessage("재부팅에 실패하였습니다.");
+			System.out.println("Reboot fail : " + e.toString());
+			e.printStackTrace();
+		}
+    	
+    }
     private void shutdown(MessageChannel channel) {
-    	File targetFile = new File(Constants.Files.MEME_PATH + "terminated.gif");
-    	channel.sendFile(targetFile).queue();
+    	NotifyArchivesDisconnected();
     	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
     	
     	try {
@@ -446,6 +540,86 @@ public class Archives extends ListenerAdapter
 			e.printStackTrace();
 		}
     	System.exit(0);
+    }
+    
+    private static TextChannel getNoticeChannel(Guild guild) {
+        List<TextChannel> noticeChannelList = guild.getTextChannelsByName(Constants.Name.BOT_NOTICE_CHANNEL, false);
+        TextChannel noticeChannel = null;
+        if (noticeChannelList.isEmpty())
+        	noticeChannel = guild.createTextChannel(Constants.Name.BOT_NOTICE_CHANNEL).complete();
+        else
+        	noticeChannel = noticeChannelList.get(0);
+        
+        if (noticeChannel == null)
+        	Logger.writeLog("log_" + guild.getId(), "공지방을 찾을 수 없음");
+		
+        return noticeChannel;
+    }
+	
+	private static boolean checkAudioManagerAlone(AudioManager audioManager) {
+		return audioManager.isConnected() && audioManager.getConnectedChannel().getMembers().size() == 1;
+	}
+
+	private static void NotifyArchivesConnected() {
+		for(Guild guild : jda.getGuilds()) {
+			MessageChannel noticeChannel = getNoticeChannel(guild);
+			if (noticeChannel != null) {
+				File targetFile = new File(Constants.Files.MEME_COMMON_PATH + "matrix.gif");
+				if (targetFile.exists()) {
+					noticeChannel.sendFile(targetFile).queue();
+					noticeChannel.sendMessage("기록보관소 가동").queue();
+				}
+					
+			}
+		}
+	}
+	private static void NotifyArchivesDisconnected() {
+		for(Guild guild : jda.getGuilds()) {
+			MessageChannel noticeChannel = getNoticeChannel(guild);
+			if (noticeChannel != null) {
+				File targetFile = new File(Constants.Files.MEME_COMMON_PATH + "terminated.gif");
+				if (targetFile.exists()) {
+					noticeChannel.sendFile(targetFile).queue();
+					noticeChannel.sendMessage("기록보관소 중지").queue();
+				}
+					
+			}
+		}
+	}
+    
+    private void createMemeTable(Guild guild) {
+        Connection conn = null;
+        Statement stmt = null;
+        int ret;
+        MessageChannel noticeChannel = getNoticeChannel(guild);
+
+		try {
+            conn = DriverManager.getConnection(PrivateData.DB.url_meme, PrivateData.DB.root, PrivateData.DB.pass);
+
+            stmt = conn.createStatement();
+            ret = stmt.executeUpdate("CREATE TABLE `meme`.`" + guild.getId() + "` (`command` text, `path` text, `atime` text)");
+
+            if (ret != 0) {
+    			Logger.writeLog("log_" + guild.getId(), "밈 명령어 테이블 생성이 실패하였습니다.");
+    			noticeChannel.sendMessage("밈 명령어 테이블 생성이 실패하였습니다.").queue();
+    			System.out.println("Create meme table fail");
+            }
+		} 
+		catch (SQLException e) {
+			Logger.writeLog("log_" + guild.getId(), "밈 명령어 테이블 생성이 실패하였습니다.");
+			noticeChannel.sendMessage("밈 명령어 테이블 생성이 실패하였습니다.").queue();
+			System.out.println("Create meme table fail  : " + e.toString());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if (conn != null && !conn.isClosed())
+					conn.close();
+			} catch (SQLException e) {
+				System.out.println("connection close fail : " + e.toString());
+				e.printStackTrace();
+			}
+		}
     }
 
 
@@ -466,10 +640,36 @@ public class Archives extends ListenerAdapter
 				e.printStackTrace();
 			}
     		
-    		{
-    			MemeCmdController.checkExpiredMeme();
+    		for(Guild guild : jda.getGuilds()) {
+    			MessageChannel noticeChannel = getNoticeChannel(guild);
+    			if (noticeChannel != null)
+    				MemeCmdController.checkExpiredMeme(noticeChannel, guild.getId());
     		}
     		
+    		this.run();
+    		
+    	}
+    	
+    }
+
+    static class AfkVoiceChannelCheckThread extends Thread {    	
+    	
+    	public void run() {
+    		AudioManager audioManager;
+    		
+			try {
+	    		for(Guild guild : jda.getGuilds()) {
+	    			audioManager = guild.getAudioManager();
+	    			if (checkAudioManagerAlone(audioManager))
+	        				audioManager.closeAudioConnection();
+	    		}
+	    		
+				Thread.sleep(Constants.Max.AFK_VOICE_SEC * 1000);
+			} catch (InterruptedException e) {
+				System.out.println("InterruptedException : " + e.toString());
+				e.printStackTrace();
+			}
+			
     		this.run();
     		
     	}
