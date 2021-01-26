@@ -12,11 +12,22 @@ import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -28,9 +39,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import java.sql.*;
 import java.text.SimpleDateFormat;
-
 /* This project is based on JDA example "MessageListenerExample.java" */
 
+@SuppressWarnings("unused")
 public class Archives extends ListenerAdapter
 {
 	private static JDA jda;
@@ -41,9 +52,8 @@ public class Archives extends ListenerAdapter
 	
 	private static int MEME_ADD = 0;
 	private static int MEME_MODIFY = 1;
-	
-	
-	
+
+
     /**
      * This is the method where the program starts.
      *

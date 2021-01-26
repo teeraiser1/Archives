@@ -17,6 +17,7 @@ import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 
+import main.java.archives.Constants;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -96,13 +97,13 @@ public class BotApplicationManager extends ListenerAdapter {
   public void onMessageReceived(final MessageReceivedEvent event) {
     Member member = event.getMember();
 
-    if (!event.isFromType(ChannelType.TEXT) || member == null || member.getUser().isBot()) {
+    if (!event.isFromType(ChannelType.TEXT) || member == null) {
       return;
     }
 
     BotGuildContext guildContext = getContext(event.getGuild());
 
-    controllerManager.dispatchMessage(guildContext.controllers, "!@", event.getMessage(), new BotCommandMappingHandler() {
+    controllerManager.dispatchMessage(guildContext.controllers, Constants.Command.LAVA_PLAYER, event.getMessage(), new BotCommandMappingHandler() {
       @Override
       public void commandNotFound(Message message, String name) {
 

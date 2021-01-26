@@ -26,4 +26,12 @@ public final class Constants {
 	public static final class Name {
 		public static final String BOT_NOTICE_CHANNEL = "기록보관소_공지방";
 	}
+	
+	public static final class Number {
+		public static int DATAFORMAT_HOUR_OFFSET = 32400000;
+	}
+	
+	public static final class Command {
+		public static String LAVA_PLAYER = "!@";
+	}
 }
