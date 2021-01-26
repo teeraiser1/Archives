@@ -19,6 +19,7 @@ import discord4j.core.object.entity.TextChannel;
 import main.java.archives.MemeCmdController.MemeCmd;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageHistory;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 
@@ -695,4 +696,42 @@ public class MemeCmdController {
     		channel.sendMessage(textChannelMessage).queue();
     	}
     }
+    
+    
+
+    static void createMemeTable(Guild guild) {
+        Connection conn = null;
+        Statement stmt = null;
+        int ret;
+        MessageChannel noticeChannel = NoticeController.getNoticeChannel(guild);
+
+		try {
+            conn = DriverManager.getConnection(PrivateData.DB.url_meme, PrivateData.DB.root, PrivateData.DB.pass);
+
+            stmt = conn.createStatement();
+            ret = stmt.executeUpdate("CREATE TABLE `meme`.`" + guild.getId() + "` (`command` text, `path` text, `atime` text)");
+
+            if (ret != 0) {
+    			Logger.writeLog("log_" + guild.getId(), "밈 명령어 테이블 생성이 실패하였습니다.");
+    			noticeChannel.sendMessage("밈 명령어 테이블 생성이 실패하였습니다.").queue();
+    			System.out.println("Create meme table fail");
+            }
+		} 
+		catch (SQLException e) {
+			Logger.writeLog("log_" + guild.getId(), "밈 명령어 테이블 생성이 실패하였습니다.");
+			noticeChannel.sendMessage("밈 명령어 테이블 생성이 실패하였습니다.").queue();
+			System.out.println("Create meme table fail  : " + e.toString());
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if (conn != null && !conn.isClosed())
+					conn.close();
+			} catch (SQLException e) {
+				System.out.println("connection close fail : " + e.toString());
+				e.printStackTrace();
+			}
+		}
+    }
+    
 }
