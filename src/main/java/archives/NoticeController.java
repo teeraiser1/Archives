@@ -33,8 +33,9 @@ public class NoticeController {
 		
         return noticeChannel;
     }
-    
-    public static void NotifyArchivesConnected() {
+
+    @DebugCommandHandler
+    public static void notifyArchivesConnected() {
 		for(Guild guild : jda.getGuilds()) {
 			MessageChannel noticeChannel = getNoticeChannel(guild);
 			if (noticeChannel != null) {
@@ -44,12 +45,13 @@ public class NoticeController {
 					noticeChannel.sendMessage("기록보관소 가동 ").queue();
 				}
 					
-				NotifyUpdatedFunction();
+				notifyUpdatedFunction();
 			}
 		}
 	}
-	
-    public static void NotifyArchivesDisconnected() {
+
+    @DebugCommandHandler
+    public static void notifyArchivesDisconnected() {
 		for(Guild guild : jda.getGuilds()) {
 			MessageChannel noticeChannel = getNoticeChannel(guild);
 			if (noticeChannel != null) {
@@ -62,12 +64,13 @@ public class NoticeController {
 			}
 		}
 	}
-    
-    public static void NotifyUpdatedFunction() {
+
+    @DebugCommandHandler
+    public static void notifyUpdatedFunction() {
 		for(Guild guild : jda.getGuilds()) {
 			MessageChannel noticeChannel = getNoticeChannel(guild);
 			if (noticeChannel != null)
-		    	ArchivesCommandController.ShowUpdateFunction(noticeChannel);
+		    	ArchivesCommandController.showUpdatedFunction(noticeChannel);
 		}
     }
 }

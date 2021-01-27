@@ -44,6 +44,10 @@ public class ArchivesThreads {
     	}
     	
     }
+    
+    public static void RunExpiredMemeCheckThread() {
+    	ExpiredMemeCheckThread.getInstance().start();
+    }
 
     static class AfkVoiceChannelCheckThread extends Thread {    	
     	
@@ -71,5 +75,9 @@ public class ArchivesThreads {
     		
     	}
     	
+    }
+    
+    public static void RunAfkVoiceChannelCheckThread() {
+    	AfkVoiceChannelCheckThread.getInstance().start();
     }
 }

@@ -26,6 +26,7 @@ public class ArchivesCommandController {
 
     
     /************************ Initiation *************************/
+    @DebugCommandHandler
     static void initDir() {
 		File meme_path = new File(Constants.Files.MEME_PATH);
         if (!meme_path.exists()) {
@@ -49,6 +50,7 @@ public class ArchivesCommandController {
 
 		System.out.println("Essensial dir init success");
     }
+    @DebugCommandHandler
     static void initDir(String guildID) {
 		File meme_guild_path = new File(Constants.Files.MEME_PATH + guildID + "//");
         if (!meme_guild_path.exists()) {
@@ -58,8 +60,9 @@ public class ArchivesCommandController {
 		System.out.println("guild dir init success");
     }
 
-    
-    static void RequestSoragodong(MessageChannel channel) {
+
+    @DebugCommandHandler
+    static void requestSoragodong(MessageChannel channel) {
     	channel.sendFile(new File(Constants.Files.MEME_COMMON_PATH + "soragodong_qst.jpeg"))
     			.queue();
     	channel.sendFile(new File(Constants.Files.MEME_COMMON_PATH + "soragodong_ans.jpeg"))
@@ -77,6 +80,7 @@ public class ArchivesCommandController {
     
 
     /************************ Show *************************/
+    @DebugCommandHandler
     static void showMembers(MessageChannel channel, Guild guild) {
     	List<Member> members = guild.getMembers();
     	for (Member mb : members)
@@ -85,12 +89,9 @@ public class ArchivesCommandController {
     			.queue();
     	}
     }
-    static void showMemeList(MessageChannel channel, String guildID) {
-    	String str = MemeCmdController.showMemeCmd(guildID);
-    	channel.sendMessage(str).queue();
-    }
     
-    static void ShowUpdateFunction(MessageChannel channel) {
+    @DebugCommandHandler
+    static void showUpdatedFunction(MessageChannel channel) {
     	File updateFile = new File(Constants.Files.ROOT_PATH + "update.txt");
     	
     	if (!updateFile.exists())
@@ -124,7 +125,8 @@ public class ArchivesCommandController {
 		}
     	
     }
-    
+
+    @DebugCommandHandler
     static void showHelp(MessageChannel channel, String version) {
     	StringBuilder builder = new StringBuilder();
     	builder.append("기록보관소 버전 : " + version + "\n")
@@ -170,6 +172,7 @@ public class ArchivesCommandController {
     
 
     /************************ Power *************************/
+    @DebugCommandHandler
     static void reboot(MessageChannel channel) {
 		try {
 			//Process archives = Runtime.getRuntime().exec(Constants.Files.ROOT_PATH + "Archives.jar");
@@ -182,7 +185,7 @@ public class ArchivesCommandController {
 			Process archives = pb.start();
 			
 			if (archives != null) {		    	
-				NoticeController.NotifyArchivesDisconnected();
+				NoticeController.notifyArchivesDisconnected();
 		    	try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -199,8 +202,9 @@ public class ArchivesCommandController {
 		}
     	
     }
+    @DebugCommandHandler
     static void shutdown(MessageChannel channel) {
-    	NoticeController.NotifyArchivesDisconnected();
+    	NoticeController.notifyArchivesDisconnected();
     	jda.getPresence().setStatus(OnlineStatus.OFFLINE);
     	
     	try {
@@ -211,7 +215,6 @@ public class ArchivesCommandController {
 		}
     	System.exit(0);
     }
-    
     
     
 	static boolean checkAudioManagerAlone(AudioManager audioManager) {

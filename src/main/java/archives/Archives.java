@@ -49,6 +49,7 @@ public class Archives extends ListenerAdapter
 	public static Archives archives;
 	
 	private static JDA jda;
+	private static DebugCommandManager debugCommandManager;
 	private boolean isAttending = false;
 	private Vector<String> participants = new Vector<String>();
 	HashMap<String, Timestamp> studyTime = new HashMap<String, Timestamp>();
@@ -88,7 +89,7 @@ public class Archives extends ListenerAdapter
             
             System.out.println("Finished Building JDA!");
 
-            NoticeController.NotifyArchivesConnected();
+            NoticeController.notifyArchivesConnected();
         }
         catch (LoginException e)
         {
@@ -130,7 +131,7 @@ public class Archives extends ListenerAdapter
     public void onGuildJoin(GuildJoinEvent event) {
     	Guild guild = event.getGuild();
     	
-    	NoticeController.NotifyArchivesConnected();
+    	NoticeController.notifyArchivesConnected();
     	MemeCmdController.createMemeTable(guild);
     	ArchivesCommandController.initDir(guild.getId());
     }
@@ -268,7 +269,7 @@ public class Archives extends ListenerAdapter
         
         /******************** 밈 명령어 관련 기능 **********************/
         else if (msg.matches(".*소라고동님.*")) {
-        	ArchivesCommandController.RequestSoragodong(channel);
+        	ArchivesCommandController.requestSoragodong(channel);
         }
         else if (msg.startsWith("!밈"))
         {
@@ -280,7 +281,8 @@ public class Archives extends ListenerAdapter
 	        	}
         	}
         	else {
-        		ArchivesCommandController.showMemeList(channel, guild.getId());
+
+            	MemeCmdController.showMemeCmd(channel, guild.getId());
         	}
         }
         ///////////////////// 밈 파일 입출력 및 자동화/////////////////////////////////
@@ -341,7 +343,7 @@ public class Archives extends ListenerAdapter
 
         
         else if (msg.equals("!업데이트 내용")) {
-        	ArchivesCommandController.ShowUpdateFunction(channel);
+        	ArchivesCommandController.showUpdatedFunction(channel);
         }
 
         /******************** help **********************/
@@ -379,7 +381,9 @@ public class Archives extends ListenerAdapter
         }*/
         
         else if (msg.startsWith("!debug")) {
-        	String[] args = null;
+        	debugCommandManager.dispatchDebugCommand("!debug", message, channel, guild);
+        	
+/*        	String[] args = null;
         	if ((args = extractArgs(msg)) != null) {
     			if (args[0].equals("createMemeTable")) {
     				MemeCmdController.createMemeTable(guild);
@@ -387,7 +391,7 @@ public class Archives extends ListenerAdapter
     			else if (args[0].equals("initDir")) {
     				ArchivesCommandController.initDir(guild.getId());
 	        	}
-        	}
+        	}*/
         }
 
         /******************** 밈 명령어 모니터링 **********************/
@@ -404,7 +408,7 @@ public class Archives extends ListenerAdapter
     	if (arg_index < 1)
     		return null;
     	else
-    		return message.substring(arg_index).split(" ");
+    		return message.substring(arg_index).split("\\s+");
     }
     private String argstoLine(String[] args, String partition) {
     	if (args.length > 0) {
@@ -434,6 +438,14 @@ public class Archives extends ListenerAdapter
         NoticeController.jda = jda;
         ArchivesCommandController.jda = jda;
         ArchivesThreads.jda = jda;
+        
+        List<Class<?>> controllers = new ArrayList<>();
+        controllers.add(NoticeController.class);
+        controllers.add(ArchivesCommandController.class);
+        controllers.add(MemeCmdController.class);
+        controllers.add(ArchivesThreads.class);
+        
+        debugCommandManager = new DebugCommandManager(controllers);
     }
     
 }

@@ -117,7 +117,7 @@ public class MusicController implements BotController {
 			String videoId = getYoutubeVideoId(urlArg);
 			String youtubeVideo = "https://www.youtube.com/watch?v=";
 			String funcName = new Throwable().getStackTrace()[0].getMethodName();
-			message.getChannel().sendMessage(Constants.Command.LAVA_PLAYER + funcName + " " + youtubeVideo + videoId)
+			message.getChannel().sendMessage(Constants.Prefix.LAVA_PLAYER + funcName + " " + youtubeVideo + videoId)
 					.queue();
 		}
 	}

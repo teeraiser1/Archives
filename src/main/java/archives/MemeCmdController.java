@@ -396,6 +396,7 @@ public class MemeCmdController {
     
     // 밈 명령어 삭제
     // DB에서 명령어 체크 후 삭제 및 이미지 파일 삭제
+    @DebugCommandHandler
     public static void deleteMemeCmd(String command, MessageChannel channel, String guildID) {
 	    Connection conn = null;
 		PreparedStatement pstmt = null;
@@ -500,6 +501,7 @@ public class MemeCmdController {
     
     // 밈 출력
     // DB에서 해당 명령어 검색 후 출력 & 마지막 사용시간 수정
+    @DebugCommandHandler
     public static void executeMemeCmd(MessageChannel channel, Message message, String guildID) {
     	MemeCmd targetCmd = findMemeCmd(message.getContentDisplay(), guildID);
 		ActionResult ar = new ActionResult();
@@ -605,8 +607,9 @@ public class MemeCmdController {
     	
     	return result;
     }
-    
-    public static String showMemeCmd(String guildID) {
+
+    @DebugCommandHandler
+    public static void showMemeCmd(MessageChannel channel, String guildID) {
     	Connection conn = null;
     	Statement stmt = null;
     	ResultSet rs = null;
@@ -636,11 +639,13 @@ public class MemeCmdController {
     		}
     	}
     	
-    	return result;
+    	channel.sendMessage(result).queue();
+    	//return result;
     }
     
     // 만료된 밈 체크
     // 일정 시간동안 사용되지 않은 밈 명령어에 대하여 삭제 절차 진행
+    @DebugCommandHandler
     public static void checkExpiredMeme(MessageChannel noticeChannel, String guildID) {
     	Connection conn = null;
     	Statement stmt = null;
@@ -699,6 +704,7 @@ public class MemeCmdController {
     
     
 
+    @DebugCommandHandler
     static void createMemeTable(Guild guild) {
         Connection conn = null;
         Statement stmt = null;
@@ -709,7 +715,7 @@ public class MemeCmdController {
             conn = DriverManager.getConnection(PrivateData.DB.url_meme, PrivateData.DB.root, PrivateData.DB.pass);
 
             stmt = conn.createStatement();
-            ret = stmt.executeUpdate("CREATE TABLE `meme`.`" + guild.getId() + "` (`command` text, `path` text, `atime` text)");
+            ret = stmt.executeUpdate("CREATE TABLE IF NOT EXISTS `meme`.`" + guild.getId() + "` (`command` text, `path` text, `atime` text)");
 
             if (ret != 0) {
     			Logger.writeLog("log_" + guild.getId(), "밈 명령어 테이블 생성이 실패하였습니다.");
@@ -732,6 +738,5 @@ public class MemeCmdController {
 				e.printStackTrace();
 			}
 		}
-    }
-    
+    }    
 }

@@ -31,7 +31,8 @@ public final class Constants {
 		public static int DATAFORMAT_HOUR_OFFSET = 32400000;
 	}
 	
-	public static final class Command {
+	public static final class Prefix {
+		public static String Archives = "!";
 		public static String LAVA_PLAYER = "!@";
 	}
 }

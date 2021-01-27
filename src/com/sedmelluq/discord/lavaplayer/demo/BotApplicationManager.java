@@ -103,7 +103,7 @@ public class BotApplicationManager extends ListenerAdapter {
 
     BotGuildContext guildContext = getContext(event.getGuild());
 
-    controllerManager.dispatchMessage(guildContext.controllers, Constants.Command.LAVA_PLAYER, event.getMessage(), new BotCommandMappingHandler() {
+    controllerManager.dispatchMessage(guildContext.controllers, Constants.Prefix.LAVA_PLAYER, event.getMessage(), new BotCommandMappingHandler() {
       @Override
       public void commandNotFound(Message message, String name) {
 
