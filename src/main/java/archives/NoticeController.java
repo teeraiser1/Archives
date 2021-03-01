@@ -37,6 +37,7 @@ public class NoticeController {
     @DebugCommandHandler
     public static void notifyArchivesConnected() {
 		for(Guild guild : jda.getGuilds()) {
+	    	System.out.println(guild.getName());
 			MessageChannel noticeChannel = getNoticeChannel(guild);
 			if (noticeChannel != null) {
 				File targetFile = new File(Constants.Files.MEME_COMMON_PATH + "matrix.gif");
@@ -44,8 +45,8 @@ public class NoticeController {
 					noticeChannel.sendFile(targetFile).queue();
 					noticeChannel.sendMessage("기록보관소 가동 ").queue();
 				}
-					
-				notifyUpdatedFunction();
+
+		    	ArchivesCommandController.showUpdatedFunction(noticeChannel);
 			}
 		}
 	}

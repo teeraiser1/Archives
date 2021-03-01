@@ -45,7 +45,7 @@ import java.text.SimpleDateFormat;
 @SuppressWarnings("unused")
 public class Archives extends ListenerAdapter
 {
-	private static String ArchivesVersion = "5.1";
+	private static String ArchivesVersion = "5.2";
 	public static Archives archives;
 	
 	private static JDA jda;
@@ -58,7 +58,7 @@ public class Archives extends ListenerAdapter
 	private static int MEME_ADD = 0;
 	private static int MEME_MODIFY = 1;
 	
-	private static boolean noticeFlag;
+	private static boolean noticeFlag = false;
 
 
     /**
@@ -446,9 +446,11 @@ public class Archives extends ListenerAdapter
     		switch(arg[i].substring(1)) {
     			case "n" :
     				noticeFlag = true;
+    				System.out.print("noticeFlag On");
     				break;
     		}
     	}
+		System.out.print("\n");
     }
     
     
