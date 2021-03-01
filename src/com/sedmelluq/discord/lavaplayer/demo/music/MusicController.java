@@ -391,11 +391,8 @@ public class MusicController implements BotController {
 				SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
 				String duration_s;
-				if (track.getDuration() > Constants.Number.DATAFORMAT_HOUR_OFFSET) // DateFormat을 활용해 편하게 시간을 표현하기 위래
-																					// 9시간치의 밀리초 뺌
-					duration_s = timeFormat.format(track.getDuration() - Constants.Number.DATAFORMAT_HOUR_OFFSET);
-				else
-					duration_s = timeFormat.format(track.getDuration());
+				duration_s = timeFormat.format(track.getDuration() - Constants.Number.DATAFORMAT_HOUR_OFFSET);// DateFormat을 활용해 편하게 시간을 표현하기 위해 9시간치의 밀리초 뺌
+				
 				message.getChannel()
 						.sendMessage("Starting now: " + track.getInfo().title + " (length " + duration_s + ")").queue();
 
