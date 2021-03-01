@@ -57,6 +57,8 @@ public class Archives extends ListenerAdapter
 	
 	private static int MEME_ADD = 0;
 	private static int MEME_MODIFY = 1;
+	
+	private static boolean noticeFlag;
 
 
     /**
@@ -69,6 +71,7 @@ public class Archives extends ListenerAdapter
         // we would use AccountType.CLIENT
         try
         {
+        	checkOption(args);
             jda = JDABuilder.createDefault(PrivateData.TOKEN) // The token of the account that is logging in.
                     .addEventListeners(new Archives())   // An instance of a class that will handle events.
                     .addEventListeners(new BotApplicationManager())
@@ -85,11 +88,13 @@ public class Archives extends ListenerAdapter
 	        
 	        /*** 사용한지 오래된 밈 명령어 제거  ***/
 	        ArchivesThreads.ExpiredMemeCheckThread.getInstance().start();
+	        /*** 대화 채널에 아무도 없을 경우 대화방 퇴장  ***/
 	        ArchivesThreads.AfkVoiceChannelCheckThread.getInstance().start();
             
             System.out.println("Finished Building JDA!");
-
-            NoticeController.notifyArchivesConnected();
+            
+            if (noticeFlag)
+            	NoticeController.notifyArchivesConnected();
         }
         catch (LoginException e)
         {
@@ -431,6 +436,19 @@ public class Archives extends ListenerAdapter
     	}
     	else
     		return null;
+    }
+    private static void checkOption(String[] arg) {
+    	for (int i = 0; i < arg.length; i++)
+    	{
+    		if (arg[i].charAt(0) != '-')
+    			continue;
+    		
+    		switch(arg[i].substring(1)) {
+    			case "n" :
+    				noticeFlag = true;
+    				break;
+    		}
+    	}
     }
     
     
