@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 
@@ -44,7 +45,7 @@ public class DebugCommandManager {
 		commands.put(method.getName(), command);
 	}
 	
-	public void dispatchDebugCommand(String prefix, Message message, MessageChannel channel, Guild guild) {
+	public void dispatchDebugCommand(String prefix, Message message, MessageChannel channel, Guild guild, Member member) {
 		String content = message.getContentDisplay().trim();
 	    String[] args = content.split("\\s+");
 
@@ -72,6 +73,9 @@ public class DebugCommandManager {
 	    	}
 	    	else if (args[i + 2].equals("GuildId")) {
 	    		parameters[i] = guild.getId();
+	    	}
+	    	else if (args[i + 2].equals("UserId")) {
+	    		parameters[i] = member.getIdLong();
 	    	}
 	    	else {
 	    		parameters[i] = null;

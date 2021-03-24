@@ -6,8 +6,14 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.user.UserActivityEndEvent;
+import net.dv8tion.jda.api.events.user.UserActivityStartEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateOnlineStatusEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.AudioManager;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import net.dv8tion.jda.internal.utils.tuple.Pair;
 import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
@@ -31,6 +37,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +61,7 @@ public class Archives extends ListenerAdapter
 	private Vector<String> participants = new Vector<String>();
 	HashMap<String, Timestamp> studyTime = new HashMap<String, Timestamp>();
 	
+	private static long userActivityStatisticDeleteChecker_id;
 	
 	private static int MEME_ADD = 0;
 	private static int MEME_MODIFY = 1;
@@ -75,6 +83,9 @@ public class Archives extends ListenerAdapter
             jda = JDABuilder.createDefault(PrivateData.TOKEN) // The token of the account that is logging in.
                     .addEventListeners(new Archives())   // An instance of a class that will handle events.
                     .addEventListeners(new BotApplicationManager())
+                    .enableIntents(GatewayIntent.GUILD_PRESENCES)	// onUserUpdateOnlineStatus를 사용하기 위해 설정 - 봇의 네트워크 부하 심함 but 해당 기능을 위해 필요함
+                    .enableCache(CacheFlag.CLIENT_STATUS)	// 유저 활동 기록에서 기기에 따른 유저 스테이터스를 얻기 위해 설정
+                    .enableCache(CacheFlag.ACTIVITY)	// 유저 활동 기록에서 유저의 활동을 얻기 위해 설정
                     .build();
             jda.awaitReady(); // Blocking guarantees that JDA will be completely loaded.
 
@@ -84,13 +95,14 @@ public class Archives extends ListenerAdapter
 	        /************* 직접 구현한 기능들 *************/
 	        initControllers();
 	        ArchivesCommandController.initDir();	 // 필수 디렉토리 체크 및 생성
-
+	        
+	        UserActivityStatisticController.loadMonitoringUsers();
 	        
 	        /*** 사용한지 오래된 밈 명령어 제거  ***/
 	        ArchivesThreads.ExpiredMemeCheckThread.getInstance().start();
 	        /*** 대화 채널에 아무도 없을 경우 대화방 퇴장  ***/
 	        ArchivesThreads.AfkVoiceChannelCheckThread.getInstance().start();
-            
+	        
             System.out.println("Finished Building JDA!");
             
             if (noticeFlag)
@@ -141,6 +153,19 @@ public class Archives extends ListenerAdapter
     	ArchivesCommandController.initDir(guild.getId());
     }
     
+    @Override	
+	public void onUserUpdateOnlineStatus(UserUpdateOnlineStatusEvent event)	{
+    	UserActivityStatisticController.recordUserStatus(event.getMember());
+	}
+    @Override	
+	public void onUserActivityStart(UserActivityStartEvent event) {
+    	UserActivityStatisticController.recordUserStatus(event.getMember());
+    }
+    @Override	
+	public void onUserActivityEnd(UserActivityEndEvent event) {
+    	UserActivityStatisticController.recordUserStatus(event.getMember());
+    }
+    
     @Override
     public void onMessageReceived(MessageReceivedEvent event)
     {
@@ -151,10 +176,10 @@ public class Archives extends ListenerAdapter
         //Event specific information
         Guild guild = event.getGuild();             //The Guild that this message was sent in. (note, in the API, Guilds are Servers)
         User author = event.getAuthor();                //The user that sent the message
+        Member member = event.getMember();
         Message message = event.getMessage();           //The message that was received.
         MessageChannel channel = event.getChannel();    //This is the MessageChannel that the message was sent to.
-                                                        //  This could be a TextChannel, PrivateChannel, or Group!
-
+                                                        //  This could be a TextChannel, PrivateChannel, or Group!        
         String msg = message.getContentDisplay();              //This returns a human readable version of the Message. Similar to
                                                         // what you would see in the client.
 
@@ -168,7 +193,6 @@ public class Archives extends ListenerAdapter
             // the message possibly not being from a Guild!
 
             TextChannel textChannel = event.getTextChannel(); //The TextChannel that this message was sent to.
-            Member member = event.getMember();          //This Member that sent the message. Contains Guild specific information about the User!
 
             String name;
             if (message.isWebhookMessage())
@@ -201,10 +225,24 @@ public class Archives extends ListenerAdapter
         
         
         /************* 직접 구현한 기능들 *************/
-        if (bot) {
+        
+        
+        if (bot)
         	return ;
+        
+        // 유저 활동 통계 데이터 파기 체크를 위한 체크. 연달아서 같은 사람이 특정 메세지를 보내지 않는경우 초기화
+        if (userActivityStatisticDeleteChecker_id != 0) {
+        	if (member.getIdLong() == userActivityStatisticDeleteChecker_id && msg.equals("활동통계 파기")) {
+        		UserActivityStatisticController.deleteUserActivityData(member.getUser(), guild, channel);
+        	}
+        	else
+                channel.sendMessage("활통 통계 데이터 파기 절차가 취소되었습니다")
+                .queue();
+    		userActivityStatisticDeleteChecker_id = 0;
         }
-        else if (msg.equals("하이"))	
+        	
+        
+        if (msg.equals("하이"))	
         {
             channel.sendMessage("해-위")
                    .queue();
@@ -346,6 +384,24 @@ public class Archives extends ListenerAdapter
         	}
         }
 
+        /******************** 유저 활동 통계 **********************/
+        else if (msg.startsWith("!활동통계 ")) {
+        	String[] args = null;
+        	if ((args = extractArgs(msg)) != null) {
+    			if (args[0].equals("시작"))
+    	        	UserActivityStatisticController.joinUserActivityStatistic(member.getUser(), guild, channel);
+    			else if (args[0].equals("일시중지"))
+    	        	UserActivityStatisticController.pauseMonitoring(member.getUser(), guild, channel);
+    			else if (args[0].equals("재시작")) 
+    	        	UserActivityStatisticController.resumeMonitoring(member.getUser(), guild, channel);
+    			else if (args[0].equals("파기")) {
+    	        	channel.sendMessage("데이터를 정말로 파기하시려면 '활동통계 파기' 메세지를 바로 보내주세요. 다른 내용의 메세지를 보내거나 다른 사람이 메세지를 보내면 절차가 취소됩니다. ")
+        			.queue();
+    				userActivityStatisticDeleteChecker_id = member.getIdLong();
+    			}
+        	}
+        }
+
         
         else if (msg.equals("!업데이트 내용")) {
         	ArchivesCommandController.showUpdatedFunction(channel);
@@ -386,7 +442,7 @@ public class Archives extends ListenerAdapter
         }*/
         
         else if (msg.startsWith("!debug")) {
-        	debugCommandManager.dispatchDebugCommand("!debug", message, channel, guild);
+        	debugCommandManager.dispatchDebugCommand("!debug", message, channel, guild, member);
         	
 /*        	String[] args = null;
         	if ((args = extractArgs(msg)) != null) {
@@ -446,11 +502,10 @@ public class Archives extends ListenerAdapter
     		switch(arg[i].substring(1)) {
     			case "n" :
     				noticeFlag = true;
-    				System.out.print("noticeFlag On");
+    				System.out.println("noticeFlag On");
     				break;
     		}
     	}
-		System.out.print("\n");
     }
     
     
@@ -464,6 +519,7 @@ public class Archives extends ListenerAdapter
         controllers.add(ArchivesCommandController.class);
         controllers.add(MemeCmdController.class);
         controllers.add(ArchivesThreads.class);
+        controllers.add(UserActivityStatisticController.class);
         
         debugCommandManager = new DebugCommandManager(controllers);
     }

@@ -62,7 +62,7 @@ public class MemeCmdController {
     	}
 	}
 	
-	private static class ActionResult {
+	public static class ActionResult {
 		String type_log = null;
 		String reason_log = null;
 		String type_channel = null;
@@ -689,7 +689,7 @@ public class MemeCmdController {
 	}*/
 
     
-    private static void recordActionResult(String guildID, MessageChannel channel, ActionResult actionResult) {
+    static void recordActionResult(String guildID, MessageChannel channel, ActionResult actionResult) {
     	if (guildID != null && actionResult.type_log != null) {
     		String logMessage = actionResult.type_log + " -> " + actionResult.reason_log;
 			Logger.writeLog("log_" + guildID, logMessage);
