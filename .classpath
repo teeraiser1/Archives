@@ -48,5 +48,12 @@
 	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/opencensus-contrib-http-util-0.24.0.jar"/>
 	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/commons-validator-1.7.jar"/>
 	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/org.json.simple-0.4.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/poi-5.0.0.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/ooxml-lib/commons-compress-1.20.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/ooxml-lib/xmlbeans-4.0.0.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/ooxml-lib/curvesapi-1.06.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/poi-ooxml-full-5.0.0.jar"/>
+	<classpathentry kind="lib" path="P:/Projects/bot/dependencies/poi-5.0.0/poi-ooxml-5.0.0.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/jfreechart"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

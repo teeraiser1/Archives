@@ -8,6 +8,7 @@ public final class Constants {
 		public static final String MUSIC_PATH = ROOT_PATH + "resources//music//";
 		public static final String DATA_PATH = ROOT_PATH + "data//";
 		public static final String LOG_PATH = ROOT_PATH + "log//";
+		public static final String STATISTIC_PATH = ROOT_PATH + "statistic//";
 		public static final String MEME_DATAFILE = DATA_PATH + "meme.txt";
 	}
 	public static final class Extensions {
@@ -29,6 +30,9 @@ public final class Constants {
 	
 	public static final class Number {
 		public static int DATAFORMAT_HOUR_OFFSET = 32400000;
+		public static int DAYS_OF_WEEK = 7;
+		public static int DAYS_OF_MONTH = 30;
+		public static int DAYS_OF_YEAR = 365;
 	}
 	
 	public static final class Prefix {

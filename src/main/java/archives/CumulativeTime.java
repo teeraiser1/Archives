@@ -1,6 +1,10 @@
 package main.java.archives;
 
-public class CumulativeTime extends Object{
+import java.text.FieldPosition;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
+
+public class CumulativeTime extends NumberFormat {
 	private long millisec = 0;
 
 	public CumulativeTime(long time) {
@@ -39,6 +43,25 @@ public class CumulativeTime extends Object{
 		return this;
 	}
 	
+	public CumulativeTime add(long millisec) {
+		this.millisec += millisec;
+		return this;
+	}
+	
+
+	public CumulativeTime set(CumulativeTime ct) {
+		this.millisec = ct.millisec;
+		return this;
+	}
+	public CumulativeTime set(long millisec) {
+		this.millisec = millisec;
+		return this;
+	}
+	
+	public long get() {
+		return this.millisec;
+	}
+	
 	public static CumulativeTime valueOf(String s) {
 		CumulativeTime ct = new CumulativeTime();
 		String[] time_s = s.split(":");
@@ -47,5 +70,18 @@ public class CumulativeTime extends Object{
 		ct.millisec += Long.parseLong(time_s[2])*(1000);
 		
 		return ct;
+	}
+	@Override
+	public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition pos) {
+		return format((long) number, toAppendTo, pos);
+	}
+	@Override
+	public StringBuffer format(long number, StringBuffer toAppendTo, FieldPosition pos) {
+		return new StringBuffer(new CumulativeTime(number).toString());
+	}
+	@Override
+	public Number parse(String source, ParsePosition parsePosition) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

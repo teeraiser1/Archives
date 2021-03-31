@@ -18,12 +18,17 @@ import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.validator.DateValidator;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import com.sedmelluq.discord.lavaplayer.demo.BotApplicationManager;
+
+import main.java.archives.ActivityPerDateData.ActivityTimePerDate;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,6 +52,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 /* This project is based on JDA example "MessageListenerExample.java" */
 
 @SuppressWarnings("unused")
@@ -94,9 +101,12 @@ public class Archives extends ListenerAdapter
 
 	        /************* 직접 구현한 기능들 *************/
 	        initControllers();
+	        initShutdownHook();
 	        ArchivesCommandController.initDir();	 // 필수 디렉토리 체크 및 생성
 	        
 	        UserActivityStatisticController.loadMonitoringUsers();
+	        UserActivityStatisticController.AutoMidnightRecordThread_beforeMidnight.getInstance().start();
+	        UserActivityStatisticController.AutoMidnightRecordThread_midnight.getInstance().start();
 	        
 	        /*** 사용한지 오래된 밈 명령어 제거  ***/
 	        ArchivesThreads.ExpiredMemeCheckThread.getInstance().start();
@@ -104,6 +114,9 @@ public class Archives extends ListenerAdapter
 	        ArchivesThreads.AfkVoiceChannelCheckThread.getInstance().start();
 	        
             System.out.println("Finished Building JDA!");
+
+            UserActivityStatisticController.RecordSystemOffStatus();
+            UserActivityStatisticController.RecordEveryUsersCurrentStatus();
             
             if (noticeFlag)
             	NoticeController.notifyArchivesConnected();
@@ -155,15 +168,15 @@ public class Archives extends ListenerAdapter
     
     @Override	
 	public void onUserUpdateOnlineStatus(UserUpdateOnlineStatusEvent event)	{
-    	UserActivityStatisticController.recordUserStatus(event.getMember());
+    	UserActivityStatisticController.recordUserStatus(event.getMember(), event.getGuild());
 	}
     @Override	
 	public void onUserActivityStart(UserActivityStartEvent event) {
-    	UserActivityStatisticController.recordUserStatus(event.getMember());
+    	UserActivityStatisticController.recordUserStatus(event.getMember(), event.getGuild());
     }
     @Override	
 	public void onUserActivityEnd(UserActivityEndEvent event) {
-    	UserActivityStatisticController.recordUserStatus(event.getMember());
+    	UserActivityStatisticController.recordUserStatus(event.getMember(), event.getGuild());
     }
     
     @Override
@@ -391,13 +404,67 @@ public class Archives extends ListenerAdapter
     			if (args[0].equals("시작"))
     	        	UserActivityStatisticController.joinUserActivityStatistic(member.getUser(), guild, channel);
     			else if (args[0].equals("일시중지"))
-    	        	UserActivityStatisticController.pauseMonitoring(member.getUser(), guild, channel);
+    	        	UserActivityStatisticController.pauseMonitoring(member, guild, channel);
     			else if (args[0].equals("재시작")) 
-    	        	UserActivityStatisticController.resumeMonitoring(member.getUser(), guild, channel);
+    	        	UserActivityStatisticController.resumeMonitoring(member, guild, channel);
     			else if (args[0].equals("파기")) {
     	        	channel.sendMessage("데이터를 정말로 파기하시려면 '활동통계 파기' 메세지를 바로 보내주세요. 다른 내용의 메세지를 보내거나 다른 사람이 메세지를 보내면 절차가 취소됩니다. ")
         			.queue();
     				userActivityStatisticDeleteChecker_id = member.getIdLong();
+    			}
+    			else  {
+    				DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    				LocalDate date_from, date_to;
+    				String status;
+    				long totalMillisec;
+    				ActivityPerDateData activityPerDateData;
+    				File userActivityXlsx, chartPng;
+    				boolean xlsxExportingFlag = false;
+    				boolean chartExportingFlag = false;
+    				
+    				if (args[args.length - 1].toLowerCase().matches("xlsx"))
+    					xlsxExportingFlag = true;
+    				
+    				if (args[0].matches("\\d{4}-\\d{2}-\\d{2}")) {
+						
+	    				if (args[1].matches("\\d{4}-\\d{2}-\\d{2}")) {	// 두 날짜 사이의 총 활동 시간 출력
+	    					date_from = LocalDate.parse(args[0], dateFormat);
+	    					date_to = LocalDate.parse(args[1], dateFormat);
+	    					args[2] = translateArgFromKorToEng(args[2]);
+	        				status = args[2];
+	    					
+	    					totalMillisec = UserActivityStatisticController.extractTermDatatoMillis(member, date_from, date_to, status, guild, channel);
+	    					if (totalMillisec >= 0)
+		        	        	channel.sendMessage(author.getName() + "님의 " + args[0] + "~" + args[1] + "의  " + args[2] + " 총 활동 시간은 '" + new CumulativeTime(totalMillisec).toString()  + "' 입니다.")
+		            			.queue();
+	    				}
+	    				else {	// 해당 날짜 사이의 총 활동 시간 출력
+	    					date_to = LocalDate.parse(args[0], dateFormat);
+	    					args[1] = translateArgFromKorToEng(args[1]);
+	    					status = args[1];
+	    					
+	    					totalMillisec = UserActivityStatisticController.extractDateDatatoMillis(member, date_to, status, guild, channel);
+	    					if (totalMillisec >= 0)
+	    	    	        	channel.sendMessage(author.getName() + "님의 " + args[0] + "의  " + args[1] + " 총 활동 시간은 '" + new CumulativeTime(totalMillisec).toString()  + "' 입니다.")
+	    	        			.queue();
+	    				}
+    				}
+	    			else if (args[0].matches("all") || args[0].matches("전체")) {
+						args[1] = translateArgFromKorToEng(args[1]);
+						status = args[1];
+	    				activityPerDateData = UserActivityStatisticController.extractAllTermDatatoMillis(member, status, guild, channel);
+	    				date_to = activityPerDateData.activityTimePerDateVector.lastElement().date;
+	    				
+	    				chartPng = UserActivityStatisticController.makeDayUserActivityChartPng(date_to, activityPerDateData, member, guild, channel);
+	    				if (chartPng.exists())
+	    					channel.sendFile(chartPng).queue();
+	    				
+	    				if (xlsxExportingFlag) {
+		    				userActivityXlsx = UserActivityStatisticController.exportActivityDataToXlsx(member, activityPerDateData, guild, channel);
+		    				if (userActivityXlsx.exists())
+		    					channel.sendFile(userActivityXlsx).queue();
+	    				}
+    				}
     			}
         	}
         }
@@ -462,7 +529,16 @@ public class Archives extends ListenerAdapter
     }
 
 
-    
+    private String translateArgFromKorToEng(String arg) {
+		if (arg.matches("온라인"))
+			return "online";
+		else if (arg == "자리비움")
+			return "idle";
+		else if (arg == "다른용무중")
+			return "do_not_disturb";
+		
+		return null;
+    }
     
     private String[] extractArgs(String message) {
     	int arg_index = message.indexOf(" ") + 1;
@@ -513,6 +589,7 @@ public class Archives extends ListenerAdapter
         NoticeController.jda = jda;
         ArchivesCommandController.jda = jda;
         ArchivesThreads.jda = jda;
+        UserActivityStatisticController.jda = jda;
         
         List<Class<?>> controllers = new ArrayList<>();
         controllers.add(NoticeController.class);
@@ -522,6 +599,17 @@ public class Archives extends ListenerAdapter
         controllers.add(UserActivityStatisticController.class);
         
         debugCommandManager = new DebugCommandManager(controllers);
+    }
+    
+    static void initShutdownHook() {
+        Runtime rt = Runtime.getRuntime();
+        rt.addShutdownHook(
+            new Thread() {
+                public void run() {
+                	UserActivityStatisticController.RecordEveryUsersCurrentStatus();
+                	UserActivityStatisticController.RecordSystemOffStatus();
+            }
+        } );
     }
     
 }

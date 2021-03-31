@@ -47,6 +47,11 @@ public class ArchivesCommandController {
         if (!data_path.exists()) {
         	data_path.mkdir();
         }
+        
+		File statistic_path = new File(Constants.Files.STATISTIC_PATH);
+        if (!statistic_path.exists()) {
+        	statistic_path.mkdir();
+        }
 
 		System.out.println("Essensial dir init success");
     }
