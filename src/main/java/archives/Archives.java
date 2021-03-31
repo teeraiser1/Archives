@@ -58,7 +58,7 @@ import java.time.format.DateTimeFormatter;
 @SuppressWarnings("unused")
 public class Archives extends ListenerAdapter
 {
-	public static String ArchivesVersion = "6.1";
+	public static String ArchivesVersion = "6.0";
 	public static Archives archives;
 	
 	private static JDA jda;
