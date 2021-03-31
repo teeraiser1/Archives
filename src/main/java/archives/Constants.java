@@ -20,7 +20,7 @@ public final class Constants {
 		public static int SERVER_ID_LENGTH = 10;
 		public static int MEME_COUNT = 70;
 		public static int EXPIRATION_DATE = 14;
-		public static int AFK_VOICE_SEC = 60;
+		public static int AFK_VOICE_SEC = 3*60;
 		public static int TRIAL = 5;
 	}
 	

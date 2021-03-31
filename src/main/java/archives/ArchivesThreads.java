@@ -1,6 +1,9 @@
 package main.java.archives;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Calendar;
 
 import net.dv8tion.jda.api.JDA;
@@ -19,27 +22,25 @@ public class ArchivesThreads {
     	}
     	
     	public void run() {
-    		Date now_d = new Date(System.currentTimeMillis());
-    		
-    		Calendar now_c = Calendar.getInstance();
-    		now_c.setTime(now_d);
-    		Calendar midnight = Calendar.getInstance();
-    	
-    		midnight.set(now_c.get(Calendar.YEAR), now_c.get(Calendar.MONTH), now_c.get(Calendar.DAY_OF_MONTH), now_c.get(Calendar.HOUR_OF_DAY) + 1, 0, 0);
-    		try {
-				Thread.sleep(midnight.getTime().getTime() - now_d.getTime());
-			} catch (InterruptedException e) {
-				System.out.println("InterruptedException : " + e.toString());
-				e.printStackTrace();
-			}
-    		
-    		for(Guild guild : jda.getGuilds()) {
-    			MessageChannel noticeChannel = NoticeController.getNoticeChannel(guild);
-    			if (noticeChannel != null)
-    				MemeCmdController.checkExpiredMeme(noticeChannel, guild.getId());
+    		while(true) {
+    			LocalTime now = LocalTime.now();
+    			long sleepMillisec;
+	    		try {
+	    			if (!(now.getHour() == 0 && now.getMinute() == 0 && now.getSecond() == 0)) {
+		    			sleepMillisec = 24*60*60*1000 - now.getHour()*60*60*1000 - now.getMinute()*60*1000 - now.getSecond()*1000 - now.getNano()/1000000;
+						Thread.sleep(sleepMillisec);
+	    			}
+				} catch (InterruptedException e) {
+					System.out.println("InterruptedException : " + e.toString());
+					e.printStackTrace();
+				}
+	    		
+	    		for(Guild guild : jda.getGuilds()) {
+	    			MessageChannel noticeChannel = NoticeController.getNoticeChannel(guild);
+	    			if (noticeChannel != null)
+	    				MemeCmdController.checkExpiredMeme(noticeChannel, guild.getId());
+	    		}
     		}
-    		
-    		this.run();
     		
     	}
     	
@@ -56,23 +57,22 @@ public class ArchivesThreads {
     	}
     	
     	public void run() {
-    		AudioManager audioManager;
-    		
-			try {
-	    		for(Guild guild : jda.getGuilds()) {
-	    			audioManager = guild.getAudioManager();
-	    			if (ArchivesCommandController.checkAudioManagerAlone(audioManager))
-	        				audioManager.closeAudioConnection();
-	    		}
+    		while (true) {
+	    		AudioManager audioManager;
 	    		
-				Thread.sleep(Constants.Max.AFK_VOICE_SEC * 1000);
-			} catch (InterruptedException e) {
-				System.out.println("InterruptedException : " + e.toString());
-				e.printStackTrace();
-			}
-			
-    		this.run();
-    		
+				try {
+		    		for(Guild guild : jda.getGuilds()) {
+		    			audioManager = guild.getAudioManager();
+		    			if (ArchivesCommandController.checkAudioManagerAlone(audioManager))
+		        				audioManager.closeAudioConnection();
+		    		}
+		    		
+					Thread.sleep(Constants.Max.AFK_VOICE_SEC * 1000);
+				} catch (InterruptedException e) {
+					System.out.println("InterruptedException : " + e.toString());
+					e.printStackTrace();
+				}
+    		}
     	}
     	
     }
