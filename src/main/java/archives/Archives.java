@@ -18,7 +18,6 @@ import net.dv8tion.jda.api.entities.User;
 
 import javax.security.auth.login.LoginException;
 
-import org.apache.commons.validator.DateValidator;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.json.simple.JSONArray;
@@ -59,7 +58,7 @@ import java.time.format.DateTimeFormatter;
 @SuppressWarnings("unused")
 public class Archives extends ListenerAdapter
 {
-	private static String ArchivesVersion = "5.2";
+	public static String ArchivesVersion = "6.1";
 	public static Archives archives;
 	
 	private static JDA jda;
@@ -475,8 +474,11 @@ public class Archives extends ListenerAdapter
         }
 
         /******************** help **********************/
-        else if (msg.equals("!도움")) {
-        	ArchivesCommandController.showHelp(channel, ArchivesVersion);
+        else if (msg.startsWith("!도움")) {
+        	String arg = null;
+        	if (msg.contains(" "))
+        		arg = msg.split(" ")[1];
+        	ArchivesCommandController.showHelp(channel, arg);
         }
         /******************** 봇 재시작 및 종료 **********************/
         else if (msg.equals("!재부팅")) {

@@ -132,47 +132,22 @@ public class ArchivesCommandController {
     }
 
     @DebugCommandHandler
-    static void showHelp(MessageChannel channel, String version) {
-    	StringBuilder builder = new StringBuilder();
-    	builder.append("기록보관소 버전 : " + version + "\n")
-    			.append("!뽑기 a b c ...\n")
-		    	.append("    : a b c ... 중 하나 뽑음\n")
-				.append("!뽑기 멤버\n")
-				.append("    : 참가형 뽑기. !참가! 를 통해 참가하고 !참가종료! 시 참가자 중 한명 뽑음\n")
-				.append("\n")
-				.append("!멤버\n")
-				.append("    : 멤버 표시 (어떤 기준인지 잘 모르겠...\n")
-				.append("!검색\n")
-				.append("    : 구글 검색\n")
-				.append("\n")
-				.append("!밈\n")
-				.append("    : 현재 등록된 밈 리스트 출력\n")
-				.append("!밈 삭제 밈이름	\n")
-				.append("    : 해당 밈 삭제\n")
-				.append("파일 올리며 댓글에 !등록 밈이름\n")
-				.append("    : 밈 등록\n")
-				.append("파일 올리며 댓글에 !수정 밈이름\n")
-				.append("    : 밈 수정\n")
-				.append("\n")
-				.append("!@p 링크\n")
-				.append("    : 음악 추가(유튜브)\n")
-				.append("파일 올리며 댓글에 !@p m\n")
-				.append("    : 음악 추가(업로드 파일)\n")
-				.append("!@s\n")
-				.append("    : 음악 스킵\n")
-				.append("!@list\n")
-				.append("    : 음악 재생목록 리스트\n")
-				.append("!@now 링크\n")
-				.append("    : 음악 바로 재생\n")
-				.append("!@pause\n")
-				.append("    : 음악 일시정지\n")
-				.append("!@resume\n")
-				.append("    : 음악 재생\n")
-				.append("!@v 숫자\n")
-				.append("    : 음악 볼륨\n")
-				.append("!업데이트 내용\n")
-				.append("    : 최신 업데이트 내용 출력\n");
-		channel.sendMessage(builder).queue();
+    static void showHelp(MessageChannel channel, String helpType) {
+    	String helpString = null;
+    	System.out.println("QWER " + helpType);
+    	if (helpType == null)
+    		helpString = HelpCommand.getArchiveHelp();
+    	else if (helpType.matches("기록보관소"))
+    		helpString = HelpCommand.getArchiveCommandHelp();
+    	else if (helpType.matches("밈"))
+    		helpString = HelpCommand.getMemeHelp();
+    	else if (helpType.matches("음악"))
+    		helpString = HelpCommand.getMusicHelp();
+    	else if (helpType.matches("통계"))
+    		helpString = HelpCommand.getStatisticHelp();
+    	
+    	if (helpType != null)
+    		channel.sendMessage(helpString).queue();
     }
     
 
