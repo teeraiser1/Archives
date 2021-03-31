@@ -27,6 +27,7 @@ import main.java.archives.Constants;
 import main.java.archives.PrivateData;
 import main.java.archives.Constants.Extensions;
 import main.java.archives.Constants.Files;
+import main.java.archives.CumulativeTime;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Message.Attachment;
@@ -388,13 +389,10 @@ public class MusicController implements BotController {
 			public void trackLoaded(AudioTrack track) {
 				connectToFirstVoiceChannel(guild.getAudioManager());
 
-				SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-
-				String duration_s;
-				duration_s = timeFormat.format(track.getDuration() - Constants.Number.DATAFORMAT_HOUR_OFFSET);// DateFormat을 활용해 편하게 시간을 표현하기 위해 9시간치의 밀리초 뺌
+				CumulativeTime duration = new CumulativeTime(track.getDuration());
 				
 				message.getChannel()
-						.sendMessage("Starting now: " + track.getInfo().title + " (length " + duration_s + ")").queue();
+						.sendMessage("Starting now: " + track.getInfo().title + " (length " + duration.toString() + ")").queue();
 
 				if (now) {
 					scheduler.playNow(track, true);
