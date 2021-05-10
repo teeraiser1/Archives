@@ -134,7 +134,6 @@ public class ArchivesCommandController {
     @DebugCommandHandler
     static void showHelp(MessageChannel channel, String helpType) {
     	String helpString = null;
-    	System.out.println("QWER " + helpType);
     	if (helpType == null)
     		helpString = HelpCommand.getArchiveHelp();
     	else if (helpType.matches("기록보관소"))
@@ -146,7 +145,7 @@ public class ArchivesCommandController {
     	else if (helpType.matches("통계"))
     		helpString = HelpCommand.getStatisticHelp();
     	
-    	if (helpType != null)
+    	if (helpString != null)
     		channel.sendMessage(helpString).queue();
     }
     

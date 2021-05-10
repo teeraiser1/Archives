@@ -7,14 +7,14 @@ public class HelpCommand {
 		StringBuilder builder = new StringBuilder();
 		String prefix = Constants.Prefix.Archives;
 		builder.append("기록보관소 버전 : " + version + "\n")
-			.append(prefix + "도움 기록보관소")
-			.append("    : 기록보관소 기본 기능 도움말")
-			.append(prefix + "도움 밈")
-			.append("    : 밈 기능 도움말")
-			.append(prefix + "도움 음악")
-			.append("    : 음악 기능 도움말")
-			.append(prefix + "도움 통계")
-			.append("    : 통계 기능 도움말")
+			.append(prefix + "도움 기록보관소\n")
+			.append("    : 기록보관소 기본 기능 도움말\n")
+			.append(prefix + "도움 밈\n")
+			.append("    : 밈 기능 도움말\n")
+			.append(prefix + "도움 음악\n")
+			.append("    : 음악 기능 도움말\n")
+			.append(prefix + "도움 통계\n")
+			.append("    : 통계 기능 도움말\n")
 			.append(prefix + "업데이트 내용\n")
 			.append("    : 최신 업데이트 내용 출력\n");
 			
@@ -99,7 +99,8 @@ public class HelpCommand {
 			.append("        ex) !활동통계 전체 다른용무중\n")
 			.append(prefix + "활동통계 전체 '상태' xlsx\n")
 			.append("    : 전체 통계 차트 출력 + DB 내용을 엑셀파일로 출력\n")
-			.append("        ex) !활동통계 전체 온라인 xlsx");
+			.append("        ex) !활동통계 전체 온라인 xlsx\n")
+			.append("*해당 '유저 활동 통계 기록' 기능은 유저가 원하는 언제든지 시작, 기록 중지, 데이터 파기가 가능하며 개발자(삼등급목심)에게 데이터 확인을 요청하면 이를 가능한 신속하게 화면 공유 등을 통해 사용자에게 보여줄 의무를 가지고 있음을 알립니다.\n");
 
 		return builder.toString();
 	}	
